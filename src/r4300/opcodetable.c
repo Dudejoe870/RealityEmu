@@ -14,6 +14,7 @@ void OpcodeTableInit(void)
 	OpcodeTable[0b001101].Interpret = &ORI;
 	OpcodeTable[0b001110].Interpret = &XORI;
 
+    
 
     OpcodeTable[0b000100].Interpret = &BEQ;
     OpcodeTable[0b010100].Interpret = &BEQL;

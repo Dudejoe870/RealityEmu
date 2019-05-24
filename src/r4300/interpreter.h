@@ -28,7 +28,6 @@ void LW (uint32_t Value);
 void LWL(uint32_t Value);
 void LWR(uint32_t Value);
 void LWU(uint32_t Value);
-void JAL(uint32_t Value);
 
 void CACHE(uint32_t Value);
 
