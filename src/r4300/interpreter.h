@@ -29,10 +29,6 @@ void LWL(uint32_t Value);
 void LWR(uint32_t Value);
 void LWU(uint32_t Value);
 
-void CACHE(uint32_t Value);
-
-void COP0(uint32_t Value);
-
 void SB   (uint32_t Value);
 void SC   (uint32_t Value);
 void SCD  (uint32_t Value);
