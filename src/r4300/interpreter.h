@@ -1,8 +1,10 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
 void Step(void); // Step the CPU.
+bool GetIsRunning(void);
 
 // These cover multiple Instructions.
 void SPECIAL(uint32_t Value);

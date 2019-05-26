@@ -27,20 +27,24 @@
 #define INST_TARGET_SHIFT 0
 #define INST_COP_SHIFT    24
 
-#define INST_OP(x)     (x & INST_OP_MSK)     >> INST_OP_SHIFT
-#define INST_RS(x)     (x & INST_RS_MSK)     >> INST_RS_SHIFT
-#define INST_RT(x)     (x & INST_RT_MSK)     >> INST_RT_SHIFT
-#define INST_RD(x)     (x & INST_RD_MSK)     >> INST_RD_SHIFT
-#define INST_SA(x)     (x & INST_SA_MSK)     >> INST_SA_SHIFT
-#define INST_FUNCT(x)  (x & INST_FUNCT_MSK)  >> INST_FUNCT_SHIFT
-#define INST_IMM(x)    (x & INST_IMM_MSK)    >> INST_IMM_SHIFT
-#define INST_TARGET(x) (x & INST_TARGET_MSK) >> INST_TARGET_SHIFT
-#define INST_COP(x)    (x & INST_COP_MSK)    >> INST_COP_SHIFT
+#define INST_OP(x)     ((x & INST_OP_MSK)     >> INST_OP_SHIFT)
+#define INST_RS(x)     ((x & INST_RS_MSK)     >> INST_RS_SHIFT)
+#define INST_RT(x)     ((x & INST_RT_MSK)     >> INST_RT_SHIFT)
+#define INST_RD(x)     ((x & INST_RD_MSK)     >> INST_RD_SHIFT)
+#define INST_SA(x)     ((x & INST_SA_MSK)     >> INST_SA_SHIFT)
+#define INST_FUNCT(x)  ((x & INST_FUNCT_MSK)  >> INST_FUNCT_SHIFT)
+#define INST_IMM(x)    ((x & INST_IMM_MSK)    >> INST_IMM_SHIFT)
+#define INST_TARGET(x) ((x & INST_TARGET_MSK) >> INST_TARGET_SHIFT)
+#define INST_COP(x)    ((x & INST_COP_MSK)    >> INST_COP_SHIFT)
 
 bool IsRunning = true;
-
 bool IsBranching = false;
-int currTarget = 0;
+uint32_t currTarget = 0;
+
+bool GetIsRunning(void)
+{
+    return IsRunning;
+}
 
 static inline void UndefinedInstError(uint32_t Value)
 {
@@ -58,6 +62,11 @@ static inline void ADDImm(uint8_t Reg, uint16_t Imm, uint8_t Dst)
     WriteGPR((int)((int)ReadGPR(Reg) + (short)Imm), Dst);
 }
 
+static inline void SUBReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+{
+    WriteGPR((int)((int)ReadGPR(Reg1) - (int)ReadGPR(Reg2)), Dst);
+}
+
 static inline void DIVReg(uint8_t Reg1, uint8_t Reg2)
 {
     if ((uint32_t)ReadGPR(Reg2) == 0) return;
@@ -72,6 +81,50 @@ static inline void DIVUReg(uint8_t Reg1, uint8_t Reg2)
     WriteHI((uint32_t)ReadGPR(Reg1) % (uint32_t)ReadGPR(Reg2));
 }
 
+static inline void MULTReg(uint8_t Reg1, uint8_t Reg2)
+{
+    long Res = (int)ReadGPR(Reg1) * (int)ReadGPR(Reg2);
+    WriteLO(Res & 0xFFFFFFFF);
+    WriteHI(Res >> 32);
+}
+
+static inline void MULTUReg(uint8_t Reg1, uint8_t Reg2)
+{
+    long Res = (uint32_t)ReadGPR(Reg1) * (uint32_t)ReadGPR(Reg2);
+    WriteLO(Res & 0xFFFFFFFF);
+    WriteHI(Res >> 32);
+}
+
+static inline void SLLImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
+{
+    WriteGPR((uint32_t)(ReadGPR(Reg) << sa), Dst);
+}
+
+static inline void SLLReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+{
+    WriteGPR((uint32_t)(ReadGPR(Reg1) << (ReadGPR(Reg2) & 0x1F)), Dst);
+}
+
+static inline void SRAImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
+{
+    WriteGPR((int)ReadGPR(Reg) >> sa, Dst);
+}
+
+static inline void SRAReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+{
+    WriteGPR((int)ReadGPR(Reg1) >> (ReadGPR(Reg2) & 0x1F), Dst);
+}
+
+static inline void SRLImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
+{
+    WriteGPR((uint32_t)(ReadGPR(Reg) >> sa), Dst);
+}
+
+static inline void SRLReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+{
+    WriteGPR((uint32_t)(ReadGPR(Reg1) >> (ReadGPR(Reg2) & 0x1F)), Dst);
+}
+
 static inline void DADDReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
     WriteGPR(ReadGPR(Reg1) + ReadGPR(Reg2), Dst);
@@ -80,6 +133,11 @@ static inline void DADDReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 static inline void DADDImm(uint8_t Reg1, uint16_t Imm, uint8_t Dst)
 {
     WriteGPR(ReadGPR(Reg1) + (short)Imm, Dst);
+}
+
+static inline void DSUBReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+{
+    WriteGPR(ReadGPR(Reg1) - ReadGPR(Reg2), Dst);
 }
 
 static inline void DDIVReg(uint8_t Reg1, uint8_t Reg2)
@@ -110,6 +168,36 @@ static inline void DMULTUReg(uint8_t Reg1, uint8_t Reg2)
     WriteHI(Res >> 64);
 }
 
+static inline void DSLLImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
+{
+    WriteGPR(ReadGPR(Reg) << sa, Dst);
+}
+
+static inline void DSLLReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+{
+    WriteGPR(ReadGPR(Reg1) << (ReadGPR(Reg2) & 0x1F), Dst);
+}
+
+static inline void DSRAImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
+{
+    WriteGPR((long)ReadGPR(Reg) >> sa, Dst);
+}
+
+static inline void DSRAReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+{
+    WriteGPR((long)ReadGPR(Reg1) >> (ReadGPR(Reg2) & 0x1F), Dst);
+}
+
+static inline void DSRLImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
+{
+    WriteGPR(ReadGPR(Reg) >> sa, Dst);
+}
+
+static inline void DSRLReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+{
+    WriteGPR(ReadGPR(Reg1) >> (ReadGPR(Reg2) & 0x1F), Dst);
+}
+
 static inline void ANDReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
     WriteGPR((uint32_t)((uint32_t)ReadGPR(Reg1) & (uint32_t)ReadGPR(Reg2)), Dst);
@@ -120,18 +208,60 @@ static inline void ANDImm(uint8_t Reg, uint16_t Imm, uint8_t Dst)
     WriteGPR((uint32_t)ReadGPR(Reg) & Imm, Dst);
 }
 
+static inline void ORReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+{
+    WriteGPR((uint32_t)((uint32_t)ReadGPR(Reg1) | (uint32_t)ReadGPR(Reg2)), Dst);
+}
+
+static inline void ORImm(uint8_t Reg, uint16_t Imm, uint8_t Dst)
+{
+    WriteGPR((uint32_t)ReadGPR(Reg) | Imm, Dst);
+}
+
+static inline void XORReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+{
+    WriteGPR((uint32_t)((uint32_t)ReadGPR(Reg1) ^ (uint32_t)ReadGPR(Reg2)), Dst);
+}
+
+static inline void XORImm(uint8_t Reg, uint16_t Imm, uint8_t Dst)
+{
+    WriteGPR((uint32_t)ReadGPR(Reg) ^ Imm, Dst);
+}
+
+static inline void NORReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+{
+    WriteGPR((uint32_t)(~((uint32_t)ReadGPR(Reg1) | (uint32_t)ReadGPR(Reg2))), Dst);
+}
+
+static inline void SETCond(uint8_t Dst, bool Cond)
+{
+    WriteGPR(Cond, Dst);
+}
+
 static inline void BRANCHCond(uint16_t Imm, bool Cond)
 {
     IsBranching = Cond;
-    if (Cond) currTarget = (int)(Imm << 2);
+    if (Cond) currTarget = (Regs.PC.Value + 4) + (int)(Imm << 2);
     // In the Main Loop we check after the next instruction has executed if we are branching
-    // if so, we add the target (signed) to the PC.  Then reset the variables.
+    // if so, we set the PC to the target.  Then reset the variables.
 }
 
 static inline void BRANCHCondLikely(uint16_t Imm, bool Cond)
 {
     BRANCHCond(Imm, Cond);
     if (!Cond) AdvancePC();
+}
+
+static inline void JUMPReg(uint8_t Reg)
+{
+    IsBranching = true;
+    currTarget  = ReadGPR(Reg);
+}
+
+static inline void JUMPImm(uint32_t Target)
+{
+    IsBranching = true;
+    currTarget  = (Target << 2) | ((Regs.PC.Value + 4) & 0xF0000000);
 }
 
 static inline void Link(void)
@@ -147,6 +277,11 @@ void Step(void)
 
         uint32_t inst = ReadUInt32(Regs.PC.Value);
         opcode_t op   = OpcodeTable[INST_OP(inst)];
+        if (!op.Interpret) 
+        {
+            UndefinedInstError(inst);
+            return;
+        }
 
         Regs.GPR[0].Value = 0;
 
@@ -155,9 +290,7 @@ void Step(void)
 
         if (ShouldBranch) // If we should branch (aka the last instruction was a branch instruction)
         {
-            Regs.PC.Value -= 4; // De-advance the PC because interpreting the delay slot advances the PC
-                                // but the branch address is computed with the address of the delay slot in mind.
-            Regs.PC.Value += (int)currTarget; // Then add to the PC the target.
+            Regs.PC.Value = currTarget; // Then set to the PC the target.
             IsBranching = false; // And reset the variables.
             currTarget = 0;
         }
@@ -232,46 +365,336 @@ static inline void DMULTU(uint32_t Value)
     AdvancePC();
 }
 
+static inline void DSLL(uint32_t Value)
+{
+    DSLLImm(INST_RT(Value), INST_RD(Value), INST_SA(Value));
+    AdvancePC();
+}
+
+static inline void DSLLV(uint32_t Value)
+{
+    DSLLReg(INST_RT(Value), INST_RS(Value), INST_RD(Value));
+    AdvancePC();
+}
+
+static inline void DSLL32(uint32_t Value)
+{
+    DSLLImm(INST_RT(Value), INST_RD(Value), INST_SA(Value) + 32);
+    AdvancePC();
+}
+
+static inline void DSRA(uint32_t Value)
+{
+    DSRAImm(INST_RT(Value), INST_RD(Value), INST_SA(Value));
+    AdvancePC();
+}
+
+static inline void DSRAV(uint32_t Value)
+{
+    DSRAReg(INST_RT(Value), INST_RS(Value), INST_RD(Value));
+    AdvancePC();
+}
+
+static inline void DSRA32(uint32_t Value)
+{
+    DSRAImm(INST_RT(Value), INST_RD(Value), INST_SA(Value) + 32);
+    AdvancePC();
+}
+
+static inline void DSRL(uint32_t Value)
+{
+    DSRLImm(INST_RT(Value), INST_RD(Value), INST_SA(Value));
+    AdvancePC();
+}
+
+static inline void DSRLV(uint32_t Value)
+{
+    DSRLReg(INST_RT(Value), INST_RS(Value), INST_RD(Value));
+    AdvancePC();
+}
+
+static inline void DSRL32(uint32_t Value)
+{
+    DSRLImm(INST_RT(Value), INST_RD(Value), INST_SA(Value) + 32);
+    AdvancePC();
+}
+
+static inline void DSUB(uint32_t Value)
+{
+    // TODO: Correctly check for Overflow and Underflow and throw the exceptions accordingly.
+    DSUBReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
+    AdvancePC();
+}
+
+static inline void DSUBU(uint32_t Value)
+{
+    DSUBReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
+    AdvancePC();
+}
+
+static inline void JALR(uint32_t Value)
+{
+    Link();
+    JUMPReg(INST_RS(Value));
+    AdvancePC();
+}
+
+static inline void JR(uint32_t Value)
+{
+    JUMPReg(INST_RS(Value));
+    AdvancePC();
+}
+
+static inline void MFHI(uint32_t Value)
+{
+    WriteGPR(ReadHI(), INST_RD(Value));
+    AdvancePC();
+}
+
+static inline void MFLO(uint32_t Value)
+{
+    WriteGPR(ReadLO(), INST_RD(Value));
+    AdvancePC();
+}
+
+static inline void MTHI(uint32_t Value)
+{
+    WriteHI(ReadGPR(INST_RS(Value)));
+    AdvancePC();
+}
+
+static inline void MTLO(uint32_t Value)
+{
+    WriteLO(ReadGPR(INST_RS(Value)));
+    AdvancePC();
+}
+
+static inline void MULT(uint32_t Value)
+{
+    MULTReg(INST_RS(Value), INST_RT(Value));
+    AdvancePC();
+}
+
+static inline void MULTU(uint32_t Value)
+{
+    MULTUReg(INST_RS(Value), INST_RT(Value));
+    AdvancePC();
+}
+
+static inline void NOR(uint32_t Value)
+{
+    NORReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
+    AdvancePC();
+}
+
+static inline void OR(uint32_t Value)
+{
+    ORReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
+    AdvancePC();
+}
+
+static inline void SLL(uint32_t Value)
+{
+    SLLImm(INST_RT(Value), INST_RD(Value), INST_SA(Value));
+    AdvancePC();
+}
+
+static inline void SLLV(uint32_t Value)
+{
+    SLLReg(INST_RT(Value), INST_RS(Value), INST_RD(Value));
+    AdvancePC();
+}
+
+static inline void SLT(uint32_t Value)
+{
+    SETCond(INST_RD(Value), (int)ReadGPR(INST_RS(Value)) < (int)ReadGPR(INST_RT(Value)));
+    AdvancePC();
+}
+
+static inline void SLTU(uint32_t Value)
+{
+    SETCond(INST_RD(Value), (uint32_t)ReadGPR(INST_RS(Value)) < (uint32_t)ReadGPR(INST_RT(Value)));
+    AdvancePC();
+}
+
+static inline void SRA(uint32_t Value)
+{
+    SRAImm(INST_RT(Value), INST_RD(Value), INST_SA(Value));
+    AdvancePC();
+}
+
+static inline void SRAV(uint32_t Value)
+{
+    SRAReg(INST_RT(Value), INST_RS(Value), INST_RD(Value));
+    AdvancePC();
+}
+
+static inline void SRL(uint32_t Value)
+{
+    SRLImm(INST_RT(Value), INST_RD(Value), INST_SA(Value));
+    AdvancePC();
+}
+
+static inline void SRLV(uint32_t Value)
+{
+    SRLReg(INST_RT(Value), INST_RS(Value), INST_RD(Value));
+    AdvancePC();
+}
+
+static inline void SUB(uint32_t Value)
+{
+    // TODO: Correctly check for Overflow and Underflow and throw the exceptions accordingly.
+    SUBReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
+    AdvancePC();
+}
+
+static inline void SUBU(uint32_t Value)
+{
+    SUBReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
+    AdvancePC();
+}
+
+static inline void XOR(uint32_t Value)
+{
+    XORReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
+    AdvancePC();
+}
+
 void SPECIAL(uint32_t Value)
 {
-    if (INST_SA(Value) == 0)
+    switch (INST_FUNCT(Value))
     {
-        switch (INST_FUNCT(Value))
-        {
-            case 0b100000: // ADD
-                ADD(Value);
-                return;
-            case 0b100001: // ADDU
-                ADDU(Value);
-                return;
-            case 0b100100: // AND
-                AND(Value);
-                return;
-            case 0b101100: // DADD
-                DADD(Value);
-                return;
-            case 0b101101: // DADDU
-                DADDU(Value);
-                return;
-            case 0b011110: // DDIV
-                DDIV(Value);
-                return;
-            case 0b011111: // DDIVU
-                DDIVU(Value);
-                return;
-            case 0b011010: // DIV
-                DIV(Value);
-                return;
-            case 0b011011: // DIVU
-                DIVU(Value);
-                return;
-            case 0b011100: // DMULT
-                DMULT(Value);
-                return;
-            case 0b011101: // DMULT
-                DMULTU(Value);
-                return;
-        }
+        case 0b100000: // ADD
+            ADD(Value);
+            return;
+        case 0b100001: // ADDU
+            ADDU(Value);
+            return;
+        case 0b100100: // AND
+            AND(Value);
+            return;
+        case 0b101100: // DADD
+            DADD(Value);
+            return;
+        case 0b101101: // DADDU
+            DADDU(Value);
+            return;
+        case 0b011110: // DDIV
+            DDIV(Value);
+            return;
+        case 0b011111: // DDIVU
+            DDIVU(Value);
+            return;
+        case 0b011010: // DIV
+            DIV(Value);
+            return;
+        case 0b011011: // DIVU
+            DIVU(Value);
+            return;
+        case 0b011100: // DMULT
+            DMULT(Value);
+            return;
+        case 0b011101: // DMULT
+            DMULTU(Value);
+            return;
+        case 0b111000: // DSLL
+            DSLL(Value);
+            return;
+        case 0b010100: // DSLLV
+            DSLLV(Value);
+            return;
+        case 0b111100: // DSLL32
+            DSLL32(Value);
+            return;
+        case 0b111011: // DSRA
+            DSRA(Value);
+            return;
+        case 0b010111: // DSRAV
+            DSRAV(Value);
+            return;
+        case 0b111111: // DSRA32
+            DSRA32(Value);
+            return;
+        case 0b111010: // DSRL
+            DSRL(Value);
+            return;
+        case 0b010110: // DSRLV
+            DSRLV(Value);
+            return;
+        case 0b111110: // DSRL32
+            DSRL32(Value);
+            return;
+        case 0b101110: // DSUB
+            DSUB(Value);
+            return;
+        case 0b101111: // DSUBU
+            DSUBU(Value);
+            return;
+        case 0b001001: // JALR
+            JALR(Value);
+            return;
+        case 0b001000: // JR
+            JR(Value);
+            return;
+        case 0b010000: // MFHI
+            MFHI(Value);
+            return;
+        case 0b010010: // MFLO
+            MFLO(Value);
+            return;
+        case 0b010001: // MTHI
+            MTHI(Value);
+            return;
+        case 0b010011: // MTLO
+            MTLO(Value);
+            return;
+        case 0b011000: // MULT
+            MULT(Value);
+            return;
+        case 0b011001: // MULTU
+            MULTU(Value);
+            return;
+        case 0b100111: // NOR
+            NOR(Value);
+            return;
+        case 0b100101: // OR
+            OR(Value);
+            return;
+        case 0b000000: // SLL
+            SLL(Value);
+            return;
+        case 0b000100: // SLLV
+            SLLV(Value);
+            return;
+        case 0b101010: // SLT
+            SLT(Value);
+            return;
+        case 0b101011: // SLTU
+            SLTU(Value);
+            return;
+        case 0b000011: // SRA
+            SRA(Value);
+            return;
+        case 0b000111: // SRAV
+            SRAV(Value);
+            return;
+        case 0b000010: // SRL
+            SRL(Value);
+            return;
+        case 0b000110: // SRLV
+            SRLV(Value);
+            return;
+        case 0b100010: // SUB
+            SUB(Value);
+            return;
+        case 0b100011: // SUBU
+            SUBU(Value);
+            return;
+        case 0b001111: // SYNC
+            return; // Executes as a NOP on the VR4300.
+        case 0b100110: // XOR
+            XOR(Value);
+            return;
     }
     UndefinedInstError(Value);
 }
@@ -405,27 +828,32 @@ void ANDI(uint32_t Value)
 
 void ORI(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    ORImm(INST_RS(Value), INST_IMM(Value), INST_RT(Value));
+    AdvancePC();
 }
 
 void XORI(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    XORImm(INST_RS(Value), INST_IMM(Value), INST_RT(Value));
+    AdvancePC();
 }
 
 void LB(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    WriteGPR((int8_t)ReadUInt8(ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
+    AdvancePC();
 }
 
 void LBU(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    WriteGPR((uint8_t)ReadUInt8(ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
+    AdvancePC();
 }
 
 void LD(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    WriteGPR(ReadUInt64(ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
+    AdvancePC();
 }
 
 void LDL(uint32_t Value)
@@ -440,12 +868,14 @@ void LDR(uint32_t Value)
 
 void LH(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    WriteGPR((short)ReadUInt16(ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
+    AdvancePC();
 }
 
 void LHU(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    WriteGPR((uint16_t)ReadUInt16(ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
+    AdvancePC();
 }
 
 void LL(uint32_t Value)
@@ -460,12 +890,14 @@ void LLD(uint32_t Value)
 
 void LUI(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    WriteGPR((uint32_t)(INST_IMM(Value) << 16), INST_RT(Value));
+    AdvancePC();
 }
 
 void LW(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    WriteGPR((int)ReadUInt32(ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
+    AdvancePC();
 }
 
 void LWL(uint32_t Value)
@@ -480,12 +912,14 @@ void LWR(uint32_t Value)
 
 void LWU(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    WriteGPR((uint32_t)ReadUInt32(ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
+    AdvancePC();
 }
 
 void SB(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    WriteUInt8(ReadGPR(INST_RT(Value)), ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value));
+    AdvancePC();
 }
 
 void SC(uint32_t Value)
@@ -500,7 +934,8 @@ void SCD(uint32_t Value)
 
 void SD(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    WriteUInt64(ReadGPR(INST_RT(Value)), ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value));
+    AdvancePC();
 }
 
 void SDL(uint32_t Value)
@@ -515,22 +950,26 @@ void SDR(uint32_t Value)
 
 void SH(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    WriteUInt16(ReadGPR(INST_RT(Value)), ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value));
+    AdvancePC();
 }
 
 void SLTI(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    SETCond(INST_RT(Value), (int)ReadGPR(INST_RS(Value)) < (short)INST_IMM(Value));
+    AdvancePC();
 }
 
 void SLTIU(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    SETCond(INST_RT(Value), (uint32_t)ReadGPR(INST_RS(Value)) < (uint16_t)INST_IMM(Value));
+    AdvancePC();
 }
 
 void SW(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    WriteUInt32(ReadGPR(INST_RT(Value)), ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value));
+    AdvancePC();
 }
 
 void SWL(uint32_t Value)
@@ -593,12 +1032,15 @@ void BNEL(uint32_t Value)
 
 void J(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    JUMPImm(INST_TARGET(Value));
+    AdvancePC();
 }
 
 void JAL(uint32_t Value)
 {
-    UndefinedInstError(Value);
+    Link();
+    JUMPImm(INST_TARGET(Value));
+    AdvancePC();
 }
 
 void CACHE(uint32_t Value)
