@@ -28,18 +28,67 @@ void CPUInit(void* ROM, size_t ROMSize);
 
 void CPUDeInit(void);
 
-void WriteGPR(uint64_t Value, uint8_t Index);
-uint64_t ReadGPR(uint8_t Index);
+static inline void WriteGPR(uint64_t Value, uint8_t Index)
+{
+    Regs.GPR[Index].Value = Value;
+    if (Regs.GPR[Index].WriteCallback) Regs.GPR[Index].WriteCallback();
+}
 
-void WriteFPR(uint64_t Value, uint8_t Index);
-uint64_t ReadFPR(uint8_t Index);
+static inline uint64_t ReadGPR(uint8_t Index)
+{
+    if (Regs.GPR[Index].ReadCallback) Regs.GPR[Index].ReadCallback();
+    return Regs.GPR[Index].Value;
+}
 
-void WritePC(uint32_t Value);
-uint32_t ReadPC(void);
-void AdvancePC(void);
+static inline void WriteFPR(uint64_t Value, uint8_t Index)
+{
+    Regs.FPR[Index].Value = Value;
+    if (Regs.FPR[Index].WriteCallback) Regs.FPR[Index].WriteCallback();
+}
 
-void WriteHI(uint64_t Value);
-uint64_t ReadHI(void);
+static inline uint64_t ReadFPR(uint8_t Index)
+{
+    if (Regs.FPR[Index].ReadCallback) Regs.FPR[Index].ReadCallback();
+    return Regs.FPR[Index].Value;
+}
 
-void WriteLO(uint64_t Value);
-uint64_t ReadLO(void);
+static inline void WritePC(uint32_t Value)
+{
+    Regs.PC.Value = (uint64_t)Value;
+    if (Regs.PC.WriteCallback) Regs.PC.WriteCallback();
+}
+
+static inline uint32_t ReadPC(void)
+{
+    if (Regs.PC.ReadCallback) Regs.PC.ReadCallback();
+    return Regs.PC.Value;
+}
+
+static inline void AdvancePC(void)
+{
+    WritePC(ReadPC() + 4);
+}
+
+static inline void WriteHI(uint64_t Value)
+{
+    Regs.HI.Value = Value;
+    if (Regs.HI.WriteCallback) Regs.HI.WriteCallback();
+}
+
+static inline uint64_t ReadHI(void)
+{
+    if (Regs.HI.ReadCallback) Regs.HI.ReadCallback();
+    return Regs.HI.Value;
+}
+
+static inline void WriteLO(uint64_t Value)
+{
+    Regs.LO.Value = Value;
+    if (Regs.LO.WriteCallback) Regs.LO.WriteCallback();
+}
+
+static inline uint64_t ReadLO(void)
+{
+    if (Regs.LO.ReadCallback) Regs.LO.ReadCallback();
+    return Regs.LO.Value;
+}

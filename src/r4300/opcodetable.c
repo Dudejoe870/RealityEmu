@@ -5,6 +5,7 @@ void OpcodeTableInit(void)
 {
     OpcodeTable[0b000000].Interpret = &SPECIAL;
     OpcodeTable[0b000001].Interpret = &REGIMM;
+    OpcodeTable[0b010000].Interpret = &COPz;
     
     OpcodeTable[0b001000].Interpret = &ADDI;
     OpcodeTable[0b001001].Interpret = &ADDIU;
@@ -55,6 +56,4 @@ void OpcodeTableInit(void)
     OpcodeTable[0b000011].Interpret = &JAL;
 
     OpcodeTable[0b101111].Interpret = &CACHE;
-
-    OpcodeTable[0b010000].Interpret = &COP0;
 }

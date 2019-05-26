@@ -2,9 +2,12 @@
 
 #include <stdint.h>
 
+void Step(void); // Step the CPU.
+
 // These cover multiple Instructions.
 void SPECIAL(uint32_t Value);
 void REGIMM (uint32_t Value);
+void COPz   (uint32_t Value);
 
 void ADDI  (uint32_t Value);
 void ADDIU (uint32_t Value);
@@ -55,5 +58,3 @@ void J  (uint32_t Value);
 void JAL(uint32_t Value);
 
 void CACHE(uint32_t Value);
-
-void COP0(uint32_t Value);
