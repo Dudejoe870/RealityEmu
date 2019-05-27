@@ -20,6 +20,9 @@ typedef struct
 
 mementry_t MemEntries[MEMORY_ENTRIES];
 
+void* RDRAM;
+void* SP_DMEM;
+
 void MemoryInit(void* ROM, size_t ROMSize);
 void MemoryDeInit(void);
 

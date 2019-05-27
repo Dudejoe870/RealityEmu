@@ -37,18 +37,12 @@
 #define INST_TARGET(x) ((x & INST_TARGET_MSK) >> INST_TARGET_SHIFT)
 #define INST_COP(x)    ((x & INST_COP_MSK)    >> INST_COP_SHIFT)
 
-bool IsRunning = true;
 bool IsBranching = false;
 uint32_t currTarget = 0;
 
-bool GetIsRunning(void)
-{
-    return IsRunning;
-}
-
 static inline void UndefinedInstError(uint32_t Value)
 {
-    printf("ERROR: Unimplemented Instruction 0x%x\n", Value);
+    printf("ERROR: Unimplemented Instruction 0x%x!  PC: 0x%x\n", Value, (uint32_t)Regs.PC.Value);
     IsRunning = false;
 }
 
@@ -241,9 +235,7 @@ static inline void SETCond(uint8_t Dst, bool Cond)
 static inline void BRANCHCond(uint16_t Imm, bool Cond)
 {
     IsBranching = Cond;
-    if (Cond) currTarget = (Regs.PC.Value + 4) + (int)(Imm << 2);
-    // In the Main Loop we check after the next instruction has executed if we are branching
-    // if so, we set the PC to the target.  Then reset the variables.
+    if (Cond) currTarget = ((uint32_t)Regs.PC.Value + 4) + (int)(Imm << 2);
 }
 
 static inline void BRANCHCondLikely(uint16_t Imm, bool Cond)
@@ -261,39 +253,40 @@ static inline void JUMPReg(uint8_t Reg)
 static inline void JUMPImm(uint32_t Target)
 {
     IsBranching = true;
-    currTarget  = (Target << 2) | ((Regs.PC.Value + 4) & 0xF0000000);
+    currTarget  = (Target << 2) | (((uint32_t)Regs.PC.Value + 4) & 0xF0000000);
 }
 
 static inline void Link(void)
 {
-    Regs.GPR[31].Value = Regs.PC.Value + 8; // Hyah!
+    Regs.GPR[31].Value = (uint32_t)Regs.PC.Value + 8; // Hyah!
 }
 
 void Step(void)
 {
-    if (IsRunning)
+    bool ShouldBranch = IsBranching;
+
+    uint32_t inst = ReadUInt32((uint32_t)Regs.PC.Value);
+    opcode_t op   = OpcodeTable[INST_OP(inst)];
+
+    if (op.Interpret == NULL && inst != 0) 
     {
-        bool ShouldBranch = IsBranching;
+        printf("0x%x\n", INST_OP(inst));
+        UndefinedInstError(inst);
+        return;
+    }
 
-        uint32_t inst = ReadUInt32(Regs.PC.Value);
-        opcode_t op   = OpcodeTable[INST_OP(inst)];
-        if (!op.Interpret) 
-        {
-            UndefinedInstError(inst);
-            return;
-        }
+    Regs.GPR[0].Value = 0;
 
-        Regs.GPR[0].Value = 0;
+    if (inst != 0) op.Interpret(inst);
+    else AdvancePC();
 
-        if (inst) op.Interpret(inst);
-        else AdvancePC();
+    if (!IsRunning) return;
 
-        if (ShouldBranch) // If we should branch (aka the last instruction was a branch instruction)
-        {
-            Regs.PC.Value = currTarget; // Then set to the PC the target.
-            IsBranching = false; // And reset the variables.
-            currTarget = 0;
-        }
+    if (ShouldBranch) // If we should branch (aka the last instruction was a branch instruction)
+    {
+        Regs.PC.Value = currTarget; // Then set to the PC the target.
+        IsBranching = false; // And reset the variables.
+        currTarget = 0;
     }
 }
 
@@ -783,10 +776,67 @@ void REGIMM(uint32_t Value)
     UndefinedInstError(Value);
 }
 
+static inline void DMFC0(uint32_t Value)
+{
+    WriteGPR(ReadCOP0(INST_RD(Value)), INST_RT(Value));
+    AdvancePC();
+}
+
+static inline void DMTC0(uint32_t Value)
+{
+    WriteCOP0(ReadGPR(INST_RT(Value)), INST_RD(Value));
+    AdvancePC();
+}
+
+static inline void ERET(uint32_t Value)
+{
+    uint32_t NewPC = (Regs.COP0[COP0_Status].Value & 0b100) > 0 
+                    ? (uint32_t)Regs.COP0[COP0_ErrorEPC].Value 
+                    : (uint32_t)Regs.COP0[COP0_EPC].Value;
+    Regs.PC.Value = NewPC;
+    Regs.COP0[COP0_Status].Value &= ~0b100;
+    Regs.LLbit = false;
+}
+
+static inline void MFC0(uint32_t Value)
+{
+    WriteGPR((uint32_t)ReadCOP0(INST_RD(Value)), INST_RT(Value));
+    AdvancePC();
+}
+
+static inline void MTC0(uint32_t Value)
+{
+    WriteCOP0((uint32_t)ReadGPR(INST_RT(Value)), INST_RD(Value));
+    AdvancePC();
+}
+
 void COPz(uint32_t Value)
 {
     if (INST_COP(Value) == 0) // COP0
     {
+        switch (INST_RS(Value))
+        {
+            case 0b00001: // DMFC0
+                DMFC0(Value);
+                return;
+            case 0b00101: // DMTC0
+                DMTC0(Value);
+                return;
+            case 0b10000: // CO
+                switch (INST_FUNCT(Value))
+                {
+                    case 0b011000:
+                        ERET(Value);
+                        return;
+                }
+                break;
+            case 0b00000: // MFC0
+                MFC0(Value);
+                return;
+            case 0b00100: // MTC0
+                MTC0(Value);
+                return;
+        }
     }
     else if (INST_COP(Value) == 1) // COP1
     {

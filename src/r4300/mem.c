@@ -1,14 +1,12 @@
 #include "mem.h"
 
 #include "config.h"
+#include "cpu.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <byteswap.h>
-
-void* RDRAM;
-void* SP_DMEM;
 
 void MemoryInit(void* ROM, size_t ROMSize)
 {
@@ -69,9 +67,20 @@ mementry_t* GetMemEntry(uint32_t Addr)
     return NULL;
 }
 
+static inline void NoEntryError(uint32_t Addr)
+{
+    printf("ERROR: Unmapped Memory Address at 0x%x!  PC: 0x%x\n", Addr, (uint32_t)Regs.PC.Value);
+    IsRunning = false;
+}
+
 void WriteUInt8(uint8_t Value, uint32_t Addr)
 {
     mementry_t* Entry = GetMemEntry(Addr);
+    if (!Entry) 
+    {
+        NoEntryError(Addr);
+        return;
+    }
     size_t Index = (Addr & 0x1FFFFFFF) - Entry->Base;
 
     ((uint8_t*)Entry->MemBlock)[Index] = Value;
@@ -81,6 +90,11 @@ void WriteUInt8(uint8_t Value, uint32_t Addr)
 uint8_t ReadUInt8(uint32_t Addr)
 {
     mementry_t* Entry = GetMemEntry(Addr);
+    if (!Entry) 
+    {
+        NoEntryError(Addr);
+        return 0;
+    }
     size_t Index = (Addr & 0x1FFFFFFF) - Entry->Base;
     
     if (Entry->ReadCallback) Entry->ReadCallback(Addr);
@@ -90,55 +104,85 @@ uint8_t ReadUInt8(uint32_t Addr)
 void WriteUInt16(uint16_t Value, uint32_t Addr)
 {
     mementry_t* Entry = GetMemEntry(Addr);
+    if (!Entry) 
+    {
+        NoEntryError(Addr);
+        return;
+    }
     size_t Index = (Addr & 0x1FFFFFFF) - Entry->Base;
 
-    ((uint16_t*)Entry->MemBlock)[Index] = bswap_16(Value);
+    *(uint16_t*)(((uint8_t*)Entry->MemBlock) + Index) = bswap_16(Value);
     if (Entry->WriteCallback) Entry->WriteCallback(Value, Addr);
 }
 
 uint16_t ReadUInt16(uint32_t Addr)
 {
     mementry_t* Entry = GetMemEntry(Addr);
+    if (!Entry) 
+    {
+        NoEntryError(Addr);
+        return 0;
+    }
     size_t Index = (Addr & 0x1FFFFFFF) - Entry->Base;
 
     if (Entry->ReadCallback) Entry->ReadCallback(Addr);
-    return bswap_16(((uint16_t*)Entry->MemBlock)[Index]);
+    return bswap_16(*(uint16_t*)(((uint8_t*)Entry->MemBlock) + Index));
 }
 
 void WriteUInt32(uint32_t Value, uint32_t Addr)
 {
     mementry_t* Entry = GetMemEntry(Addr);
+    if (!Entry) 
+    {
+        NoEntryError(Addr);
+        return;
+    }
     size_t Index = (Addr & 0x1FFFFFFF) - Entry->Base;
 
-    ((uint32_t*)Entry->MemBlock)[Index] = bswap_32(Value);
+    *(uint32_t*)(((uint8_t*)Entry->MemBlock) + Index) = bswap_32(Value);
     if (Entry->WriteCallback) Entry->WriteCallback(Value, Addr);
 }
 
 uint32_t ReadUInt32(uint32_t Addr)
 {
     mementry_t* Entry = GetMemEntry(Addr);
+    if (!Entry) 
+    {
+        NoEntryError(Addr);
+        return 0;
+    }
     size_t Index = (Addr & 0x1FFFFFFF) - Entry->Base;
 
     if (Entry->ReadCallback) Entry->ReadCallback(Addr);
-    return bswap_32(((uint32_t*)Entry->MemBlock)[Index]);
+    return bswap_32(*(uint32_t*)(((uint8_t*)Entry->MemBlock) + Index));
 }
 
 void WriteUInt64(uint64_t Value, uint32_t Addr)
 {
     mementry_t* Entry = GetMemEntry(Addr);
+    if (!Entry) 
+    {
+        NoEntryError(Addr);
+        return;
+    }
     size_t Index = (Addr & 0x1FFFFFFF) - Entry->Base;
 
-    ((uint64_t*)Entry->MemBlock)[Index] = bswap_64(Value);
+    *(uint64_t*)(((uint8_t*)Entry->MemBlock) + Index) = bswap_64(Value);
     if (Entry->WriteCallback) Entry->WriteCallback(Value, Addr);
 }
 
 uint64_t ReadUInt64(uint32_t Addr)
 {
     mementry_t* Entry = GetMemEntry(Addr);
+    if (!Entry) 
+    {
+        NoEntryError(Addr);
+        return 0;
+    }
     size_t Index = (Addr & 0x1FFFFFFF) - Entry->Base;
 
     if (Entry->ReadCallback) Entry->ReadCallback(Addr);
-    return bswap_64(((uint64_t*)Entry->MemBlock)[Index]);
+    return bswap_64(*(uint64_t*)(((uint8_t*)Entry->MemBlock) + Index));
 }
 
 void MemoryCopy(uint32_t Dest, uint32_t Source, size_t Length)

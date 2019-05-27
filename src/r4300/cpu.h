@@ -12,10 +12,37 @@ typedef struct
     void (*ReadCallback)(void);
 } reg_t;
 
+#define COP0_INDEX       0
+#define COP0_RANDOM      1
+#define COP0_EntryLo0    2
+#define COP0_EntryLo1    3
+#define COP0_Context     4
+#define COP0_PageMask    5
+#define COP0_Wired       6
+#define COP0_BadVAddr    8
+#define COP0_Count       9
+#define COP0_EntryHi     10
+#define COP0_Compare     11
+#define COP0_Status      12
+#define COP0_Cause       13
+#define COP0_EPC         14
+#define COP0_PRId        15
+#define COP0_Config      16
+#define COP0_LLAddr      17
+#define COP0_WatchLo     18
+#define COP0_WatchHi     19
+#define COP0_XContext    20
+#define COP0_ParityError 26
+#define COP0_CacheError  27
+#define COP0_TagLo       28
+#define COP0_TagHi       29
+#define COP0_ErrorEPC    30
+
 typedef struct
 {
     reg_t GPR[32];
     reg_t FPR[32]; // 0: FCR0 (32-bit), 31: FCR31 (32-bit)
+    reg_t COP0[32];
     reg_t PC;
     reg_t HI;
     reg_t LO;
@@ -23,6 +50,8 @@ typedef struct
 } regs_t;
 
 regs_t Regs;
+
+bool IsRunning;
 
 void CPUInit(void* ROM, size_t ROMSize);
 
@@ -50,6 +79,18 @@ static inline uint64_t ReadFPR(uint8_t Index)
 {
     if (Regs.FPR[Index].ReadCallback) Regs.FPR[Index].ReadCallback();
     return Regs.FPR[Index].Value;
+}
+
+static inline void WriteCOP0(uint64_t Value, uint8_t Index)
+{
+    Regs.COP0[Index].Value = Value;
+    if (Regs.COP0[Index].WriteCallback) Regs.COP0[Index].WriteCallback();
+}
+
+static inline uint64_t ReadCOP0(uint8_t Index)
+{
+    if (Regs.COP0[Index].ReadCallback) Regs.COP0[Index].ReadCallback();
+    return Regs.COP0[Index].Value;
 }
 
 static inline void WritePC(uint32_t Value)
