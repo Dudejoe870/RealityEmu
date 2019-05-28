@@ -10,7 +10,10 @@ typedef struct
 
     uint32_t Base;
     uint32_t EndAddr;
-    void*    MemBlock;
+    void*    MemBlockRead;
+    void*    MemBlockWrite;
+    bool RW; // If set, it only frees MemBlockRead (Use this if both MemBlockRead and Write are the same)
+    bool ShouldFree; // If set it frees the MemBlock pointer at cleanup.
 
     void (*ReadCallback)(uint32_t Addr); // Can be NULL
     void (*WriteCallback)(uint64_t Value, uint32_t Addr); // Can be NULL
@@ -20,8 +23,36 @@ typedef struct
 
 mementry_t MemEntries[MEMORY_ENTRIES];
 
-void* RDRAM;
-void* SP_DMEM;
+void* RDRAM_RW;
+
+void*    SP_DMEM_RW;
+void*    SP_IMEM_RW;
+uint32_t SP_STATUS_REG_W;
+uint32_t SP_STATUS_REG_R;
+uint32_t SP_PC_REG_RW;
+
+uint32_t MI_INIT_MODE_REG_W;
+uint32_t MI_INIT_MODE_REG_R;
+uint32_t MI_INTR_MASK_REG_W;
+uint32_t MI_INTR_MASK_REG_R;
+
+uint32_t VI_STATUS_REG_RW;
+
+uint32_t AI_STATUS_REG_R;
+uint32_t AI_STATUS_REG_W;
+
+uint32_t PI_DRAM_ADDR_REG_RW;
+uint32_t PI_CART_ADDR_REG_RW;
+uint32_t PI_RD_LEN_REG_RW;
+uint32_t PI_WR_LEN_REG_RW;
+uint32_t PI_STATUS_REG_RW;
+
+uint32_t RI_SELECT_REG_RW;
+
+uint32_t SI_STATUS_REG_W;
+uint32_t SI_STATUS_REG_R;
+
+void* PIF_RAM_RW;
 
 void MemoryInit(void* ROM, size_t ROMSize);
 void MemoryDeInit(void);

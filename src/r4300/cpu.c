@@ -2,6 +2,7 @@
 
 #include <pthread.h>
 #include <stdio.h>
+#include <byteswap.h>
 
 #include "mem.h"
 #include "cic.h"
@@ -57,6 +58,8 @@ void CPUInit(void* ROM, size_t ROMSize)
     Regs.COP0[COP0_Compare].Value = 0xFFFFFFFF;
     Regs.COP0[COP0_Status].Value  = 0x34000000;
     Regs.COP0[COP0_Config].Value  = 0x0006E463;
+
+    RI_SELECT_REG_RW = bswap_32(0b1110);
 
     OpcodeTableInit();
 

@@ -42,30 +42,30 @@ uint32_t currTarget = 0;
 
 static inline void UndefinedInstError(uint32_t Value)
 {
-    printf("ERROR: Unimplemented Instruction 0x%x!  PC: 0x%x\n", Value, (uint32_t)Regs.PC.Value);
+    fprintf(stderr, "ERROR: Unimplemented Instruction 0x%x!  PC: 0x%x\n", Value, (uint32_t)Regs.PC.Value);
     IsRunning = false;
 }
 
 static inline void ADDReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
-    WriteGPR((int)((int)ReadGPR(Reg1) + (int)ReadGPR(Reg2)), Dst);
+    WriteGPR((long)((uint32_t)ReadGPR(Reg1) + (uint32_t)ReadGPR(Reg2)), Dst);
 }
 
 static inline void ADDImm(uint8_t Reg, uint16_t Imm, uint8_t Dst)
 {
-    WriteGPR((int)((int)ReadGPR(Reg) + (short)Imm), Dst);
+    WriteGPR((long)((uint32_t)ReadGPR(Reg) + (short)Imm), Dst);
 }
 
 static inline void SUBReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
-    WriteGPR((int)((int)ReadGPR(Reg1) - (int)ReadGPR(Reg2)), Dst);
+    WriteGPR((long)((uint32_t)ReadGPR(Reg1) - (uint32_t)ReadGPR(Reg2)), Dst);
 }
 
 static inline void DIVReg(uint8_t Reg1, uint8_t Reg2)
 {
     if ((uint32_t)ReadGPR(Reg2) == 0) return;
-    WriteLO((int)ReadGPR(Reg1) / (int)ReadGPR(Reg2));
-    WriteHI((int)ReadGPR(Reg1) % (int)ReadGPR(Reg2));
+    WriteLO((long)((int)ReadGPR(Reg1) / (int)ReadGPR(Reg2)));
+    WriteHI((long)((int)ReadGPR(Reg1) % (int)ReadGPR(Reg2)));
 }
 
 static inline void DIVUReg(uint8_t Reg1, uint8_t Reg2)
@@ -77,46 +77,46 @@ static inline void DIVUReg(uint8_t Reg1, uint8_t Reg2)
 
 static inline void MULTReg(uint8_t Reg1, uint8_t Reg2)
 {
-    long Res = (int)ReadGPR(Reg1) * (int)ReadGPR(Reg2);
+    long Res = (long)((int)ReadGPR(Reg1) * (int)ReadGPR(Reg2));
     WriteLO(Res & 0xFFFFFFFF);
     WriteHI(Res >> 32);
 }
 
 static inline void MULTUReg(uint8_t Reg1, uint8_t Reg2)
 {
-    long Res = (uint32_t)ReadGPR(Reg1) * (uint32_t)ReadGPR(Reg2);
+    long Res = (long)((uint32_t)ReadGPR(Reg1) * (uint32_t)ReadGPR(Reg2));
     WriteLO(Res & 0xFFFFFFFF);
     WriteHI(Res >> 32);
 }
 
 static inline void SLLImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
 {
-    WriteGPR((uint32_t)(ReadGPR(Reg) << sa), Dst);
+    WriteGPR(ReadGPR(Reg) << sa, Dst);
 }
 
 static inline void SLLReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
-    WriteGPR((uint32_t)(ReadGPR(Reg1) << (ReadGPR(Reg2) & 0x1F)), Dst);
+    WriteGPR((uint32_t)ReadGPR(Reg1) << (ReadGPR(Reg2) & 0x1F), Dst);
 }
 
 static inline void SRAImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
 {
-    WriteGPR((int)ReadGPR(Reg) >> sa, Dst);
+    WriteGPR((long)((int)ReadGPR(Reg) >> sa), Dst);
 }
 
 static inline void SRAReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
-    WriteGPR((int)ReadGPR(Reg1) >> (ReadGPR(Reg2) & 0x1F), Dst);
+    WriteGPR((long)((int)ReadGPR(Reg1) >> (ReadGPR(Reg2) & 0x1F)), Dst);
 }
 
 static inline void SRLImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
 {
-    WriteGPR((uint32_t)(ReadGPR(Reg) >> sa), Dst);
+    WriteGPR((uint32_t)ReadGPR(Reg) >> sa, Dst);
 }
 
 static inline void SRLReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
-    WriteGPR((uint32_t)(ReadGPR(Reg1) >> (ReadGPR(Reg2) & 0x1F)), Dst);
+    WriteGPR(ReadGPR(Reg1) >> (ReadGPR(Reg2) & 0x1F), Dst);
 }
 
 static inline void DADDReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
@@ -137,8 +137,8 @@ static inline void DSUBReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 static inline void DDIVReg(uint8_t Reg1, uint8_t Reg2)
 {
     if (ReadGPR(Reg2) == 0) return;
-    WriteLO((long)ReadGPR(Reg1) / (long)ReadGPR(Reg2));
-    WriteHI((long)ReadGPR(Reg1) % (long)ReadGPR(Reg2));
+    WriteLO((long)((long)ReadGPR(Reg1) / (long)ReadGPR(Reg2)));
+    WriteHI((long)((long)ReadGPR(Reg1) % (long)ReadGPR(Reg2)));
 }
 
 static inline void DDIVUReg(uint8_t Reg1, uint8_t Reg2)
@@ -194,48 +194,48 @@ static inline void DSRLReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 
 static inline void ANDReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
-    WriteGPR((uint32_t)((uint32_t)ReadGPR(Reg1) & (uint32_t)ReadGPR(Reg2)), Dst);
+    WriteGPR((long)((uint32_t)ReadGPR(Reg1) & (uint32_t)ReadGPR(Reg2)), Dst);
 }
 
 static inline void ANDImm(uint8_t Reg, uint16_t Imm, uint8_t Dst)
 {
-    WriteGPR((uint32_t)ReadGPR(Reg) & Imm, Dst);
+    WriteGPR((long)((uint32_t)ReadGPR(Reg) & Imm), Dst);
 }
 
 static inline void ORReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
-    WriteGPR((uint32_t)((uint32_t)ReadGPR(Reg1) | (uint32_t)ReadGPR(Reg2)), Dst);
+    WriteGPR((long)((uint32_t)ReadGPR(Reg1) | (uint32_t)ReadGPR(Reg2)), Dst);
 }
 
 static inline void ORImm(uint8_t Reg, uint16_t Imm, uint8_t Dst)
 {
-    WriteGPR((uint32_t)ReadGPR(Reg) | Imm, Dst);
+    WriteGPR((long)((uint32_t)ReadGPR(Reg) | Imm), Dst);
 }
 
 static inline void XORReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
-    WriteGPR((uint32_t)((uint32_t)ReadGPR(Reg1) ^ (uint32_t)ReadGPR(Reg2)), Dst);
+    WriteGPR((long)((uint32_t)ReadGPR(Reg1) ^ (uint32_t)ReadGPR(Reg2)), Dst);
 }
 
 static inline void XORImm(uint8_t Reg, uint16_t Imm, uint8_t Dst)
 {
-    WriteGPR((uint32_t)ReadGPR(Reg) ^ Imm, Dst);
+    WriteGPR((long)((uint32_t)ReadGPR(Reg) ^ Imm), Dst);
 }
 
 static inline void NORReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
-    WriteGPR((uint32_t)(~((uint32_t)ReadGPR(Reg1) | (uint32_t)ReadGPR(Reg2))), Dst);
+    WriteGPR((long)(~((uint32_t)ReadGPR(Reg1) | (uint32_t)ReadGPR(Reg2))), Dst);
 }
 
 static inline void SETCond(uint8_t Dst, bool Cond)
 {
-    WriteGPR(Cond, Dst);
+    WriteGPR((uint32_t)Cond, Dst);
 }
 
 static inline void BRANCHCond(uint16_t Imm, bool Cond)
 {
     IsBranching = Cond;
-    if (Cond) currTarget = ((uint32_t)Regs.PC.Value + 4) + (int)(Imm << 2);
+    if (Cond) currTarget = ((uint32_t)Regs.PC.Value + 4) + (int)(((short)Imm) << 2);
 }
 
 static inline void BRANCHCondLikely(uint16_t Imm, bool Cond)
@@ -267,7 +267,7 @@ void Step(void)
 
     uint32_t inst = ReadUInt32((uint32_t)Regs.PC.Value);
     opcode_t op   = OpcodeTable[INST_OP(inst)];
-
+    
     if (op.Interpret == NULL && inst != 0) 
     {
         printf("0x%x\n", INST_OP(inst));
@@ -500,13 +500,13 @@ static inline void SLLV(uint32_t Value)
 
 static inline void SLT(uint32_t Value)
 {
-    SETCond(INST_RD(Value), (int)ReadGPR(INST_RS(Value)) < (int)ReadGPR(INST_RT(Value)));
+    SETCond(INST_RD(Value), (long)ReadGPR(INST_RS(Value)) < (long)ReadGPR(INST_RT(Value)));
     AdvancePC();
 }
 
 static inline void SLTU(uint32_t Value)
 {
-    SETCond(INST_RD(Value), (uint32_t)ReadGPR(INST_RS(Value)) < (uint32_t)ReadGPR(INST_RT(Value)));
+    SETCond(INST_RD(Value), ReadGPR(INST_RS(Value)) < ReadGPR(INST_RT(Value)));
     AdvancePC();
 }
 
@@ -890,19 +890,19 @@ void XORI(uint32_t Value)
 
 void LB(uint32_t Value)
 {
-    WriteGPR((int8_t)ReadUInt8(ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
+    WriteGPR((long)ReadUInt8((uint32_t)ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
     AdvancePC();
 }
 
 void LBU(uint32_t Value)
 {
-    WriteGPR((uint8_t)ReadUInt8(ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
+    WriteGPR((uint8_t)ReadUInt8((uint32_t)ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
     AdvancePC();
 }
 
 void LD(uint32_t Value)
 {
-    WriteGPR(ReadUInt64(ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
+    WriteGPR(ReadUInt64((uint32_t)ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
     AdvancePC();
 }
 
@@ -918,13 +918,13 @@ void LDR(uint32_t Value)
 
 void LH(uint32_t Value)
 {
-    WriteGPR((short)ReadUInt16(ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
+    WriteGPR((long)ReadUInt16((uint32_t)ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
     AdvancePC();
 }
 
 void LHU(uint32_t Value)
 {
-    WriteGPR((uint16_t)ReadUInt16(ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
+    WriteGPR((uint16_t)ReadUInt16((uint32_t)ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
     AdvancePC();
 }
 
@@ -940,13 +940,13 @@ void LLD(uint32_t Value)
 
 void LUI(uint32_t Value)
 {
-    WriteGPR((uint32_t)(INST_IMM(Value) << 16), INST_RT(Value));
+    WriteGPR((uint32_t)INST_IMM(Value) << 16, INST_RT(Value));
     AdvancePC();
 }
 
 void LW(uint32_t Value)
 {
-    WriteGPR((int)ReadUInt32(ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
+    WriteGPR((long)ReadUInt32((uint32_t)ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
     AdvancePC();
 }
 
@@ -962,13 +962,13 @@ void LWR(uint32_t Value)
 
 void LWU(uint32_t Value)
 {
-    WriteGPR((uint32_t)ReadUInt32(ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
+    WriteGPR((uint32_t)ReadUInt32((uint32_t)ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value)), INST_RT(Value));
     AdvancePC();
 }
 
 void SB(uint32_t Value)
 {
-    WriteUInt8(ReadGPR(INST_RT(Value)), ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value));
+    WriteUInt8(ReadGPR(INST_RT(Value)), (uint32_t)ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value));
     AdvancePC();
 }
 
@@ -984,7 +984,7 @@ void SCD(uint32_t Value)
 
 void SD(uint32_t Value)
 {
-    WriteUInt64(ReadGPR(INST_RT(Value)), ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value));
+    WriteUInt64(ReadGPR(INST_RT(Value)), (uint32_t)ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value));
     AdvancePC();
 }
 
@@ -1000,19 +1000,19 @@ void SDR(uint32_t Value)
 
 void SH(uint32_t Value)
 {
-    WriteUInt16(ReadGPR(INST_RT(Value)), ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value));
+    WriteUInt16(ReadGPR(INST_RT(Value)), (uint32_t)ReadGPR(INST_RS(Value)) + (short)INST_IMM(Value));
     AdvancePC();
 }
 
 void SLTI(uint32_t Value)
 {
-    SETCond(INST_RT(Value), (int)ReadGPR(INST_RS(Value)) < (short)INST_IMM(Value));
+    SETCond(INST_RT(Value), (long)ReadGPR(INST_RS(Value)) < (short)INST_IMM(Value));
     AdvancePC();
 }
 
 void SLTIU(uint32_t Value)
 {
-    SETCond(INST_RT(Value), (uint32_t)ReadGPR(INST_RS(Value)) < (uint16_t)INST_IMM(Value));
+    SETCond(INST_RT(Value), ReadGPR(INST_RS(Value)) < (uint16_t)INST_IMM(Value));
     AdvancePC();
 }
 
@@ -1034,13 +1034,13 @@ void SWR(uint32_t Value)
 
 void BEQ(uint32_t Value)
 {
-    BRANCHCond(INST_IMM(Value), ReadGPR(INST_RS(Value)) == ReadGPR(INST_RT(Value)));
+    BRANCHCond(INST_IMM(Value), (uint32_t)ReadGPR(INST_RS(Value)) == (uint32_t)ReadGPR(INST_RT(Value)));
     AdvancePC();
 }
 
 void BEQL(uint32_t Value)
 {
-    BRANCHCondLikely(INST_IMM(Value), ReadGPR(INST_RS(Value)) == ReadGPR(INST_RT(Value)));
+    BRANCHCondLikely(INST_IMM(Value), (uint32_t)ReadGPR(INST_RS(Value)) == (uint32_t)ReadGPR(INST_RT(Value)));
     AdvancePC();
 }
 
@@ -1070,13 +1070,13 @@ void BLEZL(uint32_t Value)
 
 void BNE(uint32_t Value)
 {
-    BRANCHCond(INST_IMM(Value), ReadGPR(INST_RS(Value)) != ReadGPR(INST_RT(Value)));
+    BRANCHCond(INST_IMM(Value), (int)ReadGPR(INST_RS(Value)) != (int)ReadGPR(INST_RT(Value)));
     AdvancePC();
 }
 
 void BNEL(uint32_t Value)
 {
-    BRANCHCondLikely(INST_IMM(Value), ReadGPR(INST_RS(Value)) != ReadGPR(INST_RT(Value)));
+    BRANCHCondLikely(INST_IMM(Value), (int)ReadGPR(INST_RS(Value)) != (int)ReadGPR(INST_RT(Value)));
     AdvancePC();
 }
 
@@ -1095,5 +1095,5 @@ void JAL(uint32_t Value)
 
 void CACHE(uint32_t Value)
 {
-    // Does nothing (we don't need to emulate this)
+    AdvancePC(); // Does nothing (we don't need to emulate this)
 }

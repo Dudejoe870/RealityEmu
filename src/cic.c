@@ -4,33 +4,31 @@
 
 #include <stdio.h>
 
-uint32_t CRC32(uint32_t Base, size_t Length)
+uint32_t CRC32(uint32_t Base, size_t size) 
 {
-    uint32_t Table[256];
-    uint64_t n, k;
+    uint32_t table[256];
+    unsigned n, k;
     uint32_t c;
 
-    for (n = 0; n < 256; ++n)
+    for (n = 0; n < 256; ++n) 
     {
         c = (uint32_t)n;
 
-        for (k = 0; k < 8; ++k)
+        for (k = 0; k < 8; ++k) 
         {
-            if ((c & 1) == 1)
-                c = 0xEDB88320 ^ (c >> 1);
+            if (c & 1)
+                c = 0xEDB88320L ^ (c >> 1);
             else
-                c >>= 1;
-        }
+                c = c >> 1;
+        }  
 
-        Table[n] = c;
+        table[n] = c;
     }
 
-    c = 0 ^ 0xFFFFFFFF;
+    c = 0L ^ 0xFFFFFFFF;
 
-    for (n = 0; n < Length; ++n)
-    {
-        c = Table[(c ^ ReadUInt8(Base + (uint32_t)n)) & 0xFF] ^ (c >> 8);
-    }
+    for (n = 0; n < size; ++n)
+        c = table[(c ^ ReadUInt8(Base + n)) & 0xFF] ^ (c >> 8);
 
     return c ^ 0xFFFFFFFF;
 }
@@ -65,7 +63,7 @@ uint32_t GetCICSeed(void)
     switch (CRC)
     {
         default:
-            printf("WARNING: Unknown CIC \"0x%x\", defaulting to seed CIC-6101\n", CRC);
+            fprintf(stderr, "WARNING: Unknown CIC CRC \"0x%x\", defaulting to seed CIC-6101\n", CRC);
             return CIC_SEED_NUS_6101;
         
         case CRC_NUS_6101:
