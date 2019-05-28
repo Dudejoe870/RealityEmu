@@ -37,6 +37,19 @@ uint32_t MI_INTR_MASK_REG_W;
 uint32_t MI_INTR_MASK_REG_R;
 
 uint32_t VI_STATUS_REG_RW;
+uint32_t VI_ORIGIN_REG_RW;
+uint32_t VI_WIDTH_REG_RW;
+uint32_t VI_INTR_REG_RW;
+uint32_t VI_CURRENT_REG_RW;
+uint32_t VI_BURST_REG_RW;
+uint32_t VI_V_SYNC_REG_RW;
+uint32_t VI_H_SYNC_REG_RW;
+uint32_t VI_LEAP_REG_RW;
+uint32_t VI_H_START_REG_RW;
+uint32_t VI_V_START_REG_RW;
+uint32_t VI_V_BURST_REG_RW;
+uint32_t VI_X_SCALE_REG_RW;
+uint32_t VI_Y_SCALE_REG_RW;
 
 uint32_t AI_STATUS_REG_R;
 uint32_t AI_STATUS_REG_W;
@@ -70,3 +83,5 @@ void WriteUInt64(uint64_t Value, uint32_t Addr);
 uint64_t ReadUInt64(uint32_t Addr);
 
 void MemoryCopy(uint32_t Dest, uint32_t Source, size_t Length);
+
+void* GetFramebuffer(void);

@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "cpu.h"
 #include "config.h"
+#include "window.h"
+#include "cart.h"
 
 void ReadFileIntoArray(void** buffer, long* len, char* file)
 {
@@ -31,8 +34,8 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    void* ROM;
-    long len;
+    void* ROM = NULL;
+    long len = 0;
 
     ReadFileIntoArray(&ROM, &len, argv[1]);
 
@@ -46,6 +49,22 @@ int main(int argc, char** argv)
 
     CPUInit(ROM, (size_t)len);
     
+    cartheader_t* Header = ROM;
+
+    char WinName[256];
+    strcpy(WinName, "RealityEmu - ");
+    strcat(WinName, Header->Name);
+
+    WindowInit(960, 720, WinName);
+
+    while (IsRunning)
+    {
+        if (WindowRun() != 0)
+            IsRunning = false;
+    }
+
+    WindowDeInit();
+
     CPUDeInit();
 
     return 0;

@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+bool GetIsBranching(void);
+
 void Step(void); // Step the CPU.
 
 // These cover multiple Instructions.

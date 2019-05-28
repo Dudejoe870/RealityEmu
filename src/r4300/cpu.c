@@ -68,7 +68,6 @@ void CPUInit(void* ROM, size_t ROMSize)
     pthread_t CPUThread;
 
     pthread_create(&CPUThread, NULL, RunCPU, NULL);
-    pthread_join(CPUThread, NULL);
 }
 
 void CPUDeInit(void)

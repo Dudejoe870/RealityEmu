@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "cpu.h"
+#include "exception.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,8 +11,11 @@
 
 void PI_WR_LEN_WRITE_EVENT(uint64_t Value, uint32_t Addr)
 {
-    printf("PIDMA: Type: Write, DMA Length: 0x%x, Cart Address: 0x%x, DRAM Address: 0x%x\n", (uint32_t)Value + 1, bswap_32(PI_CART_ADDR_REG_RW), bswap_32(PI_DRAM_ADDR_REG_RW));
     MemoryCopy(bswap_32(PI_DRAM_ADDR_REG_RW), bswap_32(PI_CART_ADDR_REG_RW), (uint32_t)Value + 1);
+
+    PI_STATUS_REG_RW &= bswap_32(0b1110); // Clear DMA Busy
+
+    printf("PIDMA: Type: Write, DMA Length: 0x%x, Cart Address: 0x%x, DRAM Address: 0x%x\n", (uint32_t)Value + 1, bswap_32(PI_CART_ADDR_REG_RW), bswap_32(PI_DRAM_ADDR_REG_RW));
 }
 
 void MemoryInit(void* ROM, size_t ROMSize)
@@ -104,6 +108,149 @@ void MemoryInit(void* ROM, size_t ROMSize)
     MemEntries[i].EndAddr       = 0x04400003;
     MemEntries[i].MemBlockRead  = &VI_STATUS_REG_RW;
     MemEntries[i].MemBlockWrite = &VI_STATUS_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x04400004;
+    MemEntries[i].EndAddr       = 0x04400007;
+    MemEntries[i].MemBlockRead  = &VI_ORIGIN_REG_RW;
+    MemEntries[i].MemBlockWrite = &VI_ORIGIN_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x04400008;
+    MemEntries[i].EndAddr       = 0x0440000B;
+    MemEntries[i].MemBlockRead  = &VI_WIDTH_REG_RW;
+    MemEntries[i].MemBlockWrite = &VI_WIDTH_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x0440000C;
+    MemEntries[i].EndAddr       = 0x0440000F;
+    MemEntries[i].MemBlockRead  = &VI_INTR_REG_RW;
+    MemEntries[i].MemBlockWrite = &VI_INTR_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x04400010;
+    MemEntries[i].EndAddr       = 0x04400013;
+    MemEntries[i].MemBlockRead  = &VI_CURRENT_REG_RW;
+    MemEntries[i].MemBlockWrite = &VI_CURRENT_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x04400014;
+    MemEntries[i].EndAddr       = 0x04400017;
+    MemEntries[i].MemBlockRead  = &VI_BURST_REG_RW;
+    MemEntries[i].MemBlockWrite = &VI_BURST_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x04400018;
+    MemEntries[i].EndAddr       = 0x0440001B;
+    MemEntries[i].MemBlockRead  = &VI_V_SYNC_REG_RW;
+    MemEntries[i].MemBlockWrite = &VI_V_SYNC_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x0440001C;
+    MemEntries[i].EndAddr       = 0x0440001F;
+    MemEntries[i].MemBlockRead  = &VI_H_SYNC_REG_RW;
+    MemEntries[i].MemBlockWrite = &VI_H_SYNC_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x04400020;
+    MemEntries[i].EndAddr       = 0x04400023;
+    MemEntries[i].MemBlockRead  = &VI_LEAP_REG_RW;
+    MemEntries[i].MemBlockWrite = &VI_LEAP_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x04400024;
+    MemEntries[i].EndAddr       = 0x04400027;
+    MemEntries[i].MemBlockRead  = &VI_H_START_REG_RW;
+    MemEntries[i].MemBlockWrite = &VI_H_START_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x04400028;
+    MemEntries[i].EndAddr       = 0x0440002B;
+    MemEntries[i].MemBlockRead  = &VI_V_START_REG_RW;
+    MemEntries[i].MemBlockWrite = &VI_V_START_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x0440002C;
+    MemEntries[i].EndAddr       = 0x0440002F;
+    MemEntries[i].MemBlockRead  = &VI_V_BURST_REG_RW;
+    MemEntries[i].MemBlockWrite = &VI_V_BURST_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x04400030;
+    MemEntries[i].EndAddr       = 0x04400033;
+    MemEntries[i].MemBlockRead  = &VI_X_SCALE_REG_RW;
+    MemEntries[i].MemBlockWrite = &VI_X_SCALE_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x04400034;
+    MemEntries[i].EndAddr       = 0x04400037;
+    MemEntries[i].MemBlockRead  = &VI_Y_SCALE_REG_RW;
+    MemEntries[i].MemBlockWrite = &VI_Y_SCALE_REG_RW;
     MemEntries[i].RW            = true;
     MemEntries[i].ShouldFree    = false;
     MemEntries[i].WriteCallback = NULL;
@@ -221,12 +368,6 @@ void MemoryInit(void* ROM, size_t ROMSize)
     MemEntries[i].ReadCallback  = NULL;
     MemEntries[i].Set = true;
     ++i;
-
-    PI_DRAM_ADDR_REG_RW = 0;
-    PI_CART_ADDR_REG_RW = 0;
-    PI_RD_LEN_REG_RW    = 0;
-    PI_WR_LEN_REG_RW    = 0;
-    PI_STATUS_REG_RW    = 0;
 }
 
 void MemoryDeInit(void)
@@ -240,7 +381,7 @@ void MemoryDeInit(void)
     }
 }
 
-mementry_t* GetMemEntry(uint32_t Addr)
+mementry_t* GetMemEntry(uint32_t Addr, bool Store)
 {
     uint32_t RealAddress = Addr & 0x1FFFFFFF;
     for (size_t i = 0; i < MEMORY_ENTRIES; ++i)
@@ -251,7 +392,7 @@ mementry_t* GetMemEntry(uint32_t Addr)
             return &MemEntries[i];
     }
 
-    // TODO: Invoke TLB Miss
+    if ((Addr & 0xC0000000) != 0x80000000) InvokeTLBMiss(Addr, Store);
 
     return NULL;
 }
@@ -259,12 +400,12 @@ mementry_t* GetMemEntry(uint32_t Addr)
 static inline void NoEntryError(uint32_t Addr, bool Store)
 {
     fprintf(stderr, "ERROR: Unmapped Memory Address at 0x%x!  PC: 0x%x, Read/Write: %s\n", Addr, (uint32_t)Regs.PC.Value, Store ? "Write" : "Read");
-    IsRunning = false;
+    if ((Addr & 0xC0000000) == 0x80000000) IsRunning = false;
 }
 
 void WriteUInt8(uint8_t Value, uint32_t Addr)
 {
-    mementry_t* Entry = GetMemEntry(Addr);
+    mementry_t* Entry = GetMemEntry(Addr, true);
     if (!Entry) 
     {
         NoEntryError(Addr, true);
@@ -278,7 +419,7 @@ void WriteUInt8(uint8_t Value, uint32_t Addr)
 
 uint8_t ReadUInt8(uint32_t Addr)
 {
-    mementry_t* Entry = GetMemEntry(Addr);
+    mementry_t* Entry = GetMemEntry(Addr, false);
     if (!Entry) 
     {
         NoEntryError(Addr, false);
@@ -292,7 +433,7 @@ uint8_t ReadUInt8(uint32_t Addr)
 
 void WriteUInt16(uint16_t Value, uint32_t Addr)
 {
-    mementry_t* Entry = GetMemEntry(Addr);
+    mementry_t* Entry = GetMemEntry(Addr, true);
     if (!Entry) 
     {
         NoEntryError(Addr, true);
@@ -306,7 +447,7 @@ void WriteUInt16(uint16_t Value, uint32_t Addr)
 
 uint16_t ReadUInt16(uint32_t Addr)
 {
-    mementry_t* Entry = GetMemEntry(Addr);
+    mementry_t* Entry = GetMemEntry(Addr, false);
     if (!Entry) 
     {
         NoEntryError(Addr, false);
@@ -320,7 +461,7 @@ uint16_t ReadUInt16(uint32_t Addr)
 
 void WriteUInt32(uint32_t Value, uint32_t Addr)
 {
-    mementry_t* Entry = GetMemEntry(Addr);
+    mementry_t* Entry = GetMemEntry(Addr, true);
     if (!Entry) 
     {
         NoEntryError(Addr, true);
@@ -334,7 +475,7 @@ void WriteUInt32(uint32_t Value, uint32_t Addr)
 
 uint32_t ReadUInt32(uint32_t Addr)
 {
-    mementry_t* Entry = GetMemEntry(Addr);
+    mementry_t* Entry = GetMemEntry(Addr, false);
     if (!Entry) 
     {
         NoEntryError(Addr, false);
@@ -348,7 +489,7 @@ uint32_t ReadUInt32(uint32_t Addr)
 
 void WriteUInt64(uint64_t Value, uint32_t Addr)
 {
-    mementry_t* Entry = GetMemEntry(Addr);
+    mementry_t* Entry = GetMemEntry(Addr, true);
     if (!Entry) 
     {
         NoEntryError(Addr, true);
@@ -362,7 +503,7 @@ void WriteUInt64(uint64_t Value, uint32_t Addr)
 
 uint64_t ReadUInt64(uint32_t Addr)
 {
-    mementry_t* Entry = GetMemEntry(Addr);
+    mementry_t* Entry = GetMemEntry(Addr, false);
     if (!Entry) 
     {
         NoEntryError(Addr, false);
@@ -376,14 +517,14 @@ uint64_t ReadUInt64(uint32_t Addr)
 
 void MemoryCopy(uint32_t Dest, uint32_t Source, size_t Length)
 {
-    mementry_t* DestEntry = GetMemEntry(Dest);
+    mementry_t* DestEntry = GetMemEntry(Dest, true);
     if (!DestEntry) 
     {
         NoEntryError(Dest, true);
         return;
     }
-    mementry_t* SrcEntry  = GetMemEntry(Source);
-    if (!SrcEntry) 
+    mementry_t* SrcEntry  = GetMemEntry(Source, false);
+    if (!SrcEntry)
     {
         NoEntryError(Source, false);
         return;
@@ -392,4 +533,19 @@ void MemoryCopy(uint32_t Dest, uint32_t Source, size_t Length)
     size_t SrcIndex  = (Source & 0x1FFFFFFF) - SrcEntry->Base;
 
     memcpy(((uint8_t*)DestEntry->MemBlockWrite) + DestIndex, ((uint8_t*)SrcEntry->MemBlockRead) + SrcIndex, Length);
+}
+
+void* GetFramebuffer(void)
+{
+    void* Res = NULL;
+
+    mementry_t* Entry = GetMemEntry(bswap_32(VI_ORIGIN_REG_RW) | 0xA0000000, false);
+    if (!Entry)
+        return NULL;
+    
+    size_t Index = (bswap_32(VI_ORIGIN_REG_RW) & 0x1FFFFFFF) - Entry->Base;
+
+    Res = (void*)((uint8_t*)Entry->MemBlockRead + Index);
+
+    return Res;
 }

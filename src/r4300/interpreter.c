@@ -6,6 +6,7 @@
 #include "cpu.h"
 #include "opcodetable.h"
 #include "mem.h"
+#include "exception.h"
 
 #define INST_OP_MSK     0b11111100000000000000000000000000
 #define INST_RS_MSK     0b00000011111000000000000000000000
@@ -39,6 +40,11 @@
 
 bool IsBranching = false;
 uint32_t currTarget = 0;
+
+bool GetIsBranching(void)
+{
+    return IsBranching;
+}
 
 static inline void UndefinedInstError(uint32_t Value)
 {
@@ -244,6 +250,11 @@ static inline void BRANCHCondLikely(uint16_t Imm, bool Cond)
     if (!Cond) AdvancePC();
 }
 
+static inline void TRAPCond(bool Cond)
+{
+    if (Cond) InvokeTrap();
+}
+
 static inline void JUMPReg(uint8_t Reg)
 {
     IsBranching = true;
@@ -267,10 +278,9 @@ void Step(void)
 
     uint32_t inst = ReadUInt32((uint32_t)Regs.PC.Value);
     opcode_t op   = OpcodeTable[INST_OP(inst)];
-    
+
     if (op.Interpret == NULL && inst != 0) 
     {
-        printf("0x%x\n", INST_OP(inst));
         UndefinedInstError(inst);
         return;
     }
@@ -547,6 +557,42 @@ static inline void SUBU(uint32_t Value)
     AdvancePC();
 }
 
+static inline void TEQ(uint32_t Value)
+{
+    TRAPCond((uint32_t)ReadGPR(INST_RS(Value)) == (uint32_t)ReadGPR(INST_RT(Value)));
+    AdvancePC();
+}
+
+static inline void TGE(uint32_t Value)
+{
+    TRAPCond((int)ReadGPR(INST_RS(Value)) >= (int)ReadGPR(INST_RT(Value)));
+    AdvancePC();
+}
+
+static inline void TGEU(uint32_t Value)
+{
+    TRAPCond((uint32_t)ReadGPR(INST_RS(Value)) >= (uint32_t)ReadGPR(INST_RT(Value)));
+    AdvancePC();
+}
+
+static inline void TLT(uint32_t Value)
+{
+    TRAPCond((int)ReadGPR(INST_RS(Value)) < (int)ReadGPR(INST_RT(Value)));
+    AdvancePC();
+}
+
+static inline void TLTU(uint32_t Value)
+{
+    TRAPCond((uint32_t)ReadGPR(INST_RS(Value)) < (uint32_t)ReadGPR(INST_RT(Value)));
+    AdvancePC();
+}
+
+static inline void TNE(uint32_t Value)
+{
+    TRAPCond((uint32_t)ReadGPR(INST_RS(Value)) != (uint32_t)ReadGPR(INST_RT(Value)));
+    AdvancePC();
+}
+
 static inline void XOR(uint32_t Value)
 {
     XORReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
@@ -685,6 +731,24 @@ void SPECIAL(uint32_t Value)
             return;
         case 0b001111: // SYNC
             return; // Executes as a NOP on the VR4300.
+        case 0b110100: // TEQ
+            TEQ(Value);
+            return;
+        case 0b110000: // TGE
+            TGE(Value);
+            return;
+        case 0b110001: // TGEU
+            TGEU(Value);
+            return;
+        case 0b110010: // TLT
+            TLT(Value);
+            return;
+        case 0b110011: // TLTU
+            TLTU(Value);
+            return;
+        case 0b110110: // TNE
+            TNE(Value);
+            return;
         case 0b100110: // XOR
             XOR(Value);
             return;
@@ -744,6 +808,42 @@ static inline void BLTZL(uint32_t Value)
     AdvancePC();
 }
 
+static inline void TEQI(uint32_t Value)
+{
+    TRAPCond((uint32_t)ReadGPR(INST_RS(Value)) == (int)INST_IMM(Value));
+    AdvancePC();
+}
+
+static inline void TGEI(uint32_t Value)
+{
+    TRAPCond((int)ReadGPR(INST_RS(Value)) >= (int)INST_IMM(Value));
+    AdvancePC();
+}
+
+static inline void TGEIU(uint32_t Value)
+{
+    TRAPCond((uint32_t)ReadGPR(INST_RS(Value)) >= (uint32_t)INST_IMM(Value));
+    AdvancePC();
+}
+
+static inline void TLTI(uint32_t Value)
+{
+    TRAPCond((int)ReadGPR(INST_RS(Value)) < (int)INST_IMM(Value));
+    AdvancePC();
+}
+
+static inline void TLTIU(uint32_t Value)
+{
+    TRAPCond((uint32_t)ReadGPR(INST_RS(Value)) < (uint32_t)INST_IMM(Value));
+    AdvancePC();
+}
+
+static inline void TNEI(uint32_t Value)
+{
+    TRAPCond((uint32_t)ReadGPR(INST_RS(Value)) != (int)INST_IMM(Value));
+    AdvancePC();
+}
+
 void REGIMM(uint32_t Value)
 {
     switch (INST_RT(Value))
@@ -771,6 +871,24 @@ void REGIMM(uint32_t Value)
             return;
         case 0b00010: // BLTZL
             BLTZL(Value);
+            return;
+        case 0b01100: // TEQI
+            TEQI(Value);
+            return;
+        case 0b01000: // TGEI
+            TGEI(Value);
+            return;
+        case 0b01001: // TGEIU
+            TGEIU(Value);
+            return;
+        case 0b01010: // TLTI
+            TLTI(Value);
+            return;
+        case 0b01011: // TLTIU
+            TLTIU(Value);
+            return;
+        case 0b01110: // TNEI
+            TNEI(Value);
             return;
     }
     UndefinedInstError(Value);
