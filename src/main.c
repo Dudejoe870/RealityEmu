@@ -46,12 +46,13 @@ int main(int argc, char** argv)
     }
 
     Config.ExpansionPak = true;
+    Config.DebugLogging = true;
 
     CPUInit(ROM, (size_t)len);
     
     cartheader_t* Header = ROM;
 
-    char WinName[256];
+    char WinName[32];
     strcpy(WinName, "RealityEmu - ");
     strcat(WinName, Header->Name);
 

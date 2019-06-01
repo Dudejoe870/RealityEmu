@@ -13,9 +13,74 @@ void PI_WR_LEN_WRITE_EVENT(uint64_t Value, uint32_t Addr)
 {
     MemoryCopy(bswap_32(PI_DRAM_ADDR_REG_RW), bswap_32(PI_CART_ADDR_REG_RW), (uint32_t)Value + 1);
 
-    PI_STATUS_REG_RW &= bswap_32(0b1110); // Clear DMA Busy
+    PI_STATUS_REG_R &= bswap_32(0b1110); // Clear DMA Busy
 
     printf("PIDMA: Type: Write, DMA Length: 0x%x, Cart Address: 0x%x, DRAM Address: 0x%x\n", (uint32_t)Value + 1, bswap_32(PI_CART_ADDR_REG_RW), bswap_32(PI_DRAM_ADDR_REG_RW));
+}
+
+void MI_INTR_MASK_REG_WRITE_EVENT(uint64_t Value, uint32_t Addr)
+{
+    // SP
+    if ((Value & 0x0001) > 0) // Clear SP
+    {
+        MI_INTR_MASK_REG_R &= ~(bswap_32(0x01));
+    }
+    else if ((Value & 0x0002) > 0) // Set SP
+    {
+        MI_INTR_MASK_REG_R |= bswap_32(0x01);
+    }
+
+    // SI
+    if ((Value & 0x0004) > 0) // Clear SI
+    {
+        MI_INTR_MASK_REG_R &= ~(bswap_32(0x02));
+    }
+    else if ((Value & 0x0008) > 0) // Set SI
+    {
+        MI_INTR_MASK_REG_R |= bswap_32(0x02);
+    }
+
+    // AI
+    if ((Value & 0x0010) > 0) // Clear AI
+    {
+        MI_INTR_MASK_REG_R &= ~(bswap_32(0x04));
+    }
+    else if ((Value & 0x0020) > 0) // Set AI
+    {
+        MI_INTR_MASK_REG_R |= bswap_32(0x04);
+    }
+
+    // VI
+    if ((Value & 0x0040) > 0) // Clear VI
+    {
+        MI_INTR_MASK_REG_R &= ~(bswap_32(0x08));
+    }
+    else if ((Value & 0x0080) > 0) // Set VI
+    {
+        MI_INTR_MASK_REG_R |= bswap_32(0x08);
+    }
+
+    // PI
+    if ((Value & 0x0100) > 0) // Clear PI
+    {
+        MI_INTR_MASK_REG_R &= ~(bswap_32(0x10));
+    }
+    else if ((Value & 0x0200) > 0) // Set PI
+    {
+        MI_INTR_MASK_REG_R |= bswap_32(0x10);
+    }
+
+    // DP
+    if ((Value & 0x0400) > 0) // Clear DP
+    {
+        MI_INTR_MASK_REG_R &= ~(bswap_32(0x20));
+    }
+    else if ((Value & 0x0800) > 0) // Set DP
+    {
+        MI_INTR_MASK_REG_R |= bswap_32(0x20);
+    }
+
+    MI_INTR_REG_W = 0;
 }
 
 void MemoryInit(void* ROM, size_t ROMSize)
@@ -93,13 +158,24 @@ void MemoryInit(void* ROM, size_t ROMSize)
     MemEntries[i].Set = true;
     ++i;
 
+    MemEntries[i].Base          = 0x04300008;
+    MemEntries[i].EndAddr       = 0x0430000B;
+    MemEntries[i].MemBlockRead  = &MI_INTR_REG_R;
+    MemEntries[i].MemBlockWrite = &MI_INTR_REG_W;
+    MemEntries[i].RW            = false;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
     MemEntries[i].Base          = 0x0430000C;
     MemEntries[i].EndAddr       = 0x0430000F;
     MemEntries[i].MemBlockRead  = &MI_INTR_MASK_REG_R;
     MemEntries[i].MemBlockWrite = &MI_INTR_MASK_REG_W;
     MemEntries[i].RW            = false;
     MemEntries[i].ShouldFree    = false;
-    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].WriteCallback = MI_INTR_MASK_REG_WRITE_EVENT;
     MemEntries[i].ReadCallback  = NULL;
     MemEntries[i].Set = true;
     ++i;
@@ -315,8 +391,96 @@ void MemoryInit(void* ROM, size_t ROMSize)
 
     MemEntries[i].Base          = 0x04600010;
     MemEntries[i].EndAddr       = 0x04600013;
-    MemEntries[i].MemBlockRead  = &PI_STATUS_REG_RW;
-    MemEntries[i].MemBlockWrite = &PI_STATUS_REG_RW;
+    MemEntries[i].MemBlockRead  = &PI_STATUS_REG_R;
+    MemEntries[i].MemBlockWrite = &PI_STATUS_REG_W;
+    MemEntries[i].RW            = false;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x04600014;
+    MemEntries[i].EndAddr       = 0x04600017;
+    MemEntries[i].MemBlockRead  = &PI_BSD_DOM1_LAT_REG_RW;
+    MemEntries[i].MemBlockWrite = &PI_BSD_DOM1_LAT_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x04600018;
+    MemEntries[i].EndAddr       = 0x0460001B;
+    MemEntries[i].MemBlockRead  = &PI_BSD_DOM1_PWD_REG_RW;
+    MemEntries[i].MemBlockWrite = &PI_BSD_DOM1_PWD_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x0460001C;
+    MemEntries[i].EndAddr       = 0x0460001F;
+    MemEntries[i].MemBlockRead  = &PI_BSD_DOM1_PGS_REG_RW;
+    MemEntries[i].MemBlockWrite = &PI_BSD_DOM1_PGS_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x04600020;
+    MemEntries[i].EndAddr       = 0x04600023;
+    MemEntries[i].MemBlockRead  = &PI_BSD_DOM1_RLS_REG_RW;
+    MemEntries[i].MemBlockWrite = &PI_BSD_DOM1_RLS_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x04600024;
+    MemEntries[i].EndAddr       = 0x04600027;
+    MemEntries[i].MemBlockRead  = &PI_BSD_DOM2_LAT_REG_RW;
+    MemEntries[i].MemBlockWrite = &PI_BSD_DOM2_LAT_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x04600028;
+    MemEntries[i].EndAddr       = 0x0460002B;
+    MemEntries[i].MemBlockRead  = &PI_BSD_DOM2_PWD_REG_RW;
+    MemEntries[i].MemBlockWrite = &PI_BSD_DOM2_PWD_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x0460002C;
+    MemEntries[i].EndAddr       = 0x0460002F;
+    MemEntries[i].MemBlockRead  = &PI_BSD_DOM2_PGS_REG_RW;
+    MemEntries[i].MemBlockWrite = &PI_BSD_DOM2_PGS_REG_RW;
+    MemEntries[i].RW            = true;
+    MemEntries[i].ShouldFree    = false;
+    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].ReadCallback  = NULL;
+    MemEntries[i].Set = true;
+    ++i;
+
+    MemEntries[i].Base          = 0x04600030;
+    MemEntries[i].EndAddr       = 0x04600033;
+    MemEntries[i].MemBlockRead  = &PI_BSD_DOM2_RLS_REG_RW;
+    MemEntries[i].MemBlockWrite = &PI_BSD_DOM2_RLS_REG_RW;
     MemEntries[i].RW            = true;
     MemEntries[i].ShouldFree    = false;
     MemEntries[i].WriteCallback = NULL;
@@ -357,7 +521,7 @@ void MemoryInit(void* ROM, size_t ROMSize)
     MemEntries[i].Set = true;
     ++i;
 
-    PIF_RAM_RW = malloc(63);
+    PIF_RAM_RW = malloc(64);
     MemEntries[i].Base          = 0x1FC007C0;
     MemEntries[i].EndAddr       = 0x1FC007FF;
     MemEntries[i].MemBlockRead  = PIF_RAM_RW;

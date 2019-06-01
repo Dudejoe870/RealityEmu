@@ -2,11 +2,13 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <byteswap.h>
 
 #include "cpu.h"
 #include "opcodetable.h"
 #include "mem.h"
 #include "exception.h"
+#include "MI.h"
 
 #define INST_OP_MSK     0b11111100000000000000000000000000
 #define INST_RS_MSK     0b00000011111000000000000000000000
@@ -40,6 +42,7 @@
 
 bool IsBranching = false;
 uint32_t currTarget = 0;
+uint64_t Cycles     = 0;
 
 bool GetIsBranching(void)
 {
@@ -90,9 +93,9 @@ static inline void MULTReg(uint8_t Reg1, uint8_t Reg2)
 
 static inline void MULTUReg(uint8_t Reg1, uint8_t Reg2)
 {
-    long Res = (long)((uint32_t)ReadGPR(Reg1) * (uint32_t)ReadGPR(Reg2));
-    WriteLO(Res & 0xFFFFFFFF);
-    WriteHI(Res >> 32);
+    uint64_t Res = (uint32_t)ReadGPR(Reg1) * (uint32_t)ReadGPR(Reg2);
+    WriteLO((uint32_t)Res);
+    WriteHI((uint32_t)(Res >> 32));
 }
 
 static inline void SLLImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
@@ -163,9 +166,9 @@ static inline void DMULTReg(uint8_t Reg1, uint8_t Reg2)
 
 static inline void DMULTUReg(uint8_t Reg1, uint8_t Reg2)
 {
-    __int128 Res = ReadGPR(Reg1) * ReadGPR(Reg2);
-    WriteLO(Res);
-    WriteHI(Res >> 64);
+    __int128 Res = (uint64_t)ReadGPR(Reg1) * (uint64_t)ReadGPR(Reg2);
+    WriteLO((uint64_t)Res);
+    WriteHI((uint64_t)(Res >> 64));
 }
 
 static inline void DSLLImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
@@ -272,6 +275,8 @@ static inline void Link(void)
     Regs.GPR[31].Value = (uint32_t)Regs.PC.Value + 8; // Hyah!
 }
 
+uint32_t CurrentScanline = 0;
+
 void Step(void)
 {
     bool ShouldBranch = IsBranching;
@@ -287,8 +292,18 @@ void Step(void)
 
     Regs.GPR[0].Value = 0;
 
+    if ((uint32_t)Regs.COP0[COP0_Count].Value >= 0xFFFFFFFF)
+    {
+        Regs.COP0[COP0_Count].Value = 0;
+
+        Cycles = 0;
+    }
+
     if (inst != 0) op.Interpret(inst);
     else AdvancePC();
+    Cycles += 1;
+
+    Regs.COP0[COP0_Count].Value = (uint32_t)(Cycles >> 1);
 
     if (!IsRunning) return;
 
@@ -298,6 +313,14 @@ void Step(void)
         IsBranching = false; // And reset the variables.
         currTarget = 0;
     }
+
+    if (CurrentScanline >= (bswap_32(VI_V_SYNC_REG_RW) & 0x3FF)) CurrentScanline = 0;
+    else ++CurrentScanline;
+    if (CurrentScanline == bswap_32(VI_INTR_REG_RW))
+        InvokeMIInterrupt(MI_INTR_VI);
+    VI_CURRENT_REG_RW = bswap_32(CurrentScanline);
+
+    PollInt();
 }
 
 static inline void ADD(uint32_t Value)
@@ -319,6 +342,12 @@ static inline void AND(uint32_t Value)
     AdvancePC();
 }
 
+static inline void BREAK(uint32_t Value)
+{
+    InvokeBreak();
+    AdvancePC();
+}
+
 static inline void DADD(uint32_t Value)
 {
     // TODO: Correctly check for Overflow and Underflow and throw the exceptions accordingly.
@@ -335,36 +364,42 @@ static inline void DADDU(uint32_t Value)
 static inline void DDIV(uint32_t Value)
 {
     DDIVReg(INST_RS(Value), INST_RT(Value));
+    Cycles += 68;
     AdvancePC();
 }
 
 static inline void DDIVU(uint32_t Value)
 {
     DDIVUReg(INST_RS(Value), INST_RT(Value));
+    Cycles += 68;
     AdvancePC();
 }
 
 static inline void DIV(uint32_t Value)
 {
     DIVReg(INST_RS(Value), INST_RT(Value));
+    Cycles += 36;
     AdvancePC();
 }
 
 static inline void DIVU(uint32_t Value)
 {
     DIVUReg(INST_RS(Value), INST_RT(Value));
+    Cycles += 36;
     AdvancePC();
 }
 
 static inline void DMULT(uint32_t Value)
 {
     DMULTReg(INST_RS(Value), INST_RT(Value));
+    Cycles += 7;
     AdvancePC();
 }
 
 static inline void DMULTU(uint32_t Value)
 {
     DMULTUReg(INST_RS(Value), INST_RT(Value));
+    Cycles += 7;
     AdvancePC();
 }
 
@@ -475,12 +510,14 @@ static inline void MTLO(uint32_t Value)
 static inline void MULT(uint32_t Value)
 {
     MULTReg(INST_RS(Value), INST_RT(Value));
+    Cycles += 4;
     AdvancePC();
 }
 
 static inline void MULTU(uint32_t Value)
 {
     MULTUReg(INST_RS(Value), INST_RT(Value));
+    Cycles += 4;
     AdvancePC();
 }
 
@@ -611,6 +648,9 @@ void SPECIAL(uint32_t Value)
             return;
         case 0b100100: // AND
             AND(Value);
+            return;
+        case 0b001101: // BREAK
+            BREAK(Value);
             return;
         case 0b101100: // DADD
             DADD(Value);

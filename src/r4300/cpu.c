@@ -53,13 +53,23 @@ void CPUInit(void* ROM, size_t ROMSize)
     Regs.LO.Value      = 0x000000003103E121;
     Regs.PC.Value      = 0xA4000040;
 
-    MemoryCopy(0xA4000000, 0x10000000, 0x1000);
+    MemoryCopy(0xA4000040, 0x10000040, 0xFC0);
 
     Regs.COP0[COP0_Compare].Value = 0xFFFFFFFF;
     Regs.COP0[COP0_Status].Value  = 0x34000000;
     Regs.COP0[COP0_Config].Value  = 0x0006E463;
 
     RI_SELECT_REG_RW = bswap_32(0b1110);
+    VI_INTR_REG_RW   = bswap_32(1023);
+    VI_H_SYNC_REG_RW = bswap_32(0xD1);
+    VI_V_SYNC_REG_RW = bswap_32(0xD2047);
+
+    uint32_t BSD_DOM1_CONFIG = ReadUInt32(0x10000000);
+
+    PI_BSD_DOM1_LAT_REG_RW = bswap_32((BSD_DOM1_CONFIG      ) & 0xFF);
+    PI_BSD_DOM1_PWD_REG_RW = bswap_32((BSD_DOM1_CONFIG >> 8 ) & 0xFF);
+    PI_BSD_DOM1_PGS_REG_RW = bswap_32((BSD_DOM1_CONFIG >> 16) & 0xFF);
+    PI_BSD_DOM1_RLS_REG_RW = bswap_32((BSD_DOM1_CONFIG >> 20) & 0x03);
 
     OpcodeTableInit();
 

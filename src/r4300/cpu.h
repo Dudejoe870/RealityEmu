@@ -52,6 +52,7 @@ typedef struct
 regs_t Regs;
 
 bool IsRunning;
+bool InvokeVIInterrupt;
 
 void CPUInit(void* ROM, size_t ROMSize);
 

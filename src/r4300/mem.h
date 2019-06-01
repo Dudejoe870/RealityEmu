@@ -19,7 +19,7 @@ typedef struct
     void (*WriteCallback)(uint64_t Value, uint32_t Addr); // Can be NULL
 } mementry_t;
 
-#define MEMORY_ENTRIES 32
+#define MEMORY_ENTRIES 256
 
 mementry_t MemEntries[MEMORY_ENTRIES];
 
@@ -35,6 +35,8 @@ uint32_t MI_INIT_MODE_REG_W;
 uint32_t MI_INIT_MODE_REG_R;
 uint32_t MI_INTR_MASK_REG_W;
 uint32_t MI_INTR_MASK_REG_R;
+uint32_t MI_INTR_REG_W;
+uint32_t MI_INTR_REG_R;
 
 uint32_t VI_STATUS_REG_RW;
 uint32_t VI_ORIGIN_REG_RW;
@@ -58,7 +60,16 @@ uint32_t PI_DRAM_ADDR_REG_RW;
 uint32_t PI_CART_ADDR_REG_RW;
 uint32_t PI_RD_LEN_REG_RW;
 uint32_t PI_WR_LEN_REG_RW;
-uint32_t PI_STATUS_REG_RW;
+uint32_t PI_STATUS_REG_R;
+uint32_t PI_STATUS_REG_W;
+uint32_t PI_BSD_DOM1_LAT_REG_RW;
+uint32_t PI_BSD_DOM1_PWD_REG_RW;
+uint32_t PI_BSD_DOM1_PGS_REG_RW;
+uint32_t PI_BSD_DOM1_RLS_REG_RW;
+uint32_t PI_BSD_DOM2_LAT_REG_RW;
+uint32_t PI_BSD_DOM2_PWD_REG_RW;
+uint32_t PI_BSD_DOM2_PGS_REG_RW;
+uint32_t PI_BSD_DOM2_RLS_REG_RW;
 
 uint32_t RI_SELECT_REG_RW;
 
