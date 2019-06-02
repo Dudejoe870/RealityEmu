@@ -12,8 +12,8 @@ typedef struct
     void (*ReadCallback)(void);
 } reg_t;
 
-#define COP0_INDEX       0
-#define COP0_RANDOM      1
+#define COP0_Index       0
+#define COP0_Random      1
 #define COP0_EntryLo0    2
 #define COP0_EntryLo1    3
 #define COP0_Context     4

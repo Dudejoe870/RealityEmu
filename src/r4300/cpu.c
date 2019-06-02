@@ -21,10 +21,10 @@ double CPUMHz = 0;
 #ifdef MEASURE_MHZ
 void* MeasureMHz(void* vargp)
 {
-    uint64_t Count = 0;
+    uint32_t Count = 0;
     while (IsRunning)
     {
-        if (Count >= 1000)
+        if (Count >= 10000)
         {
             float TimeSeconds = ((float)clock()) / CLOCKS_PER_SEC;
 
@@ -52,6 +52,11 @@ void* RunCPU(void* vargp)
     printf("Finished: CPU is running at %fMHz\n", CPUMHz);
     #endif
     return NULL;
+}
+
+void COP0_WIRED_REG_WRITE_EVENT(void)
+{
+    Regs.COP0[COP0_Random].Value = 0x1F;
 }
 
 void CPUInit(void* ROM, size_t ROMSize)
@@ -89,11 +94,14 @@ void CPUInit(void* ROM, size_t ROMSize)
     Regs.LO.Value      = 0x000000003103E121;
     Regs.PC.Value      = 0xA4000040;
 
+    Regs.COP0[COP0_Wired].WriteCallback = COP0_WIRED_REG_WRITE_EVENT;
+
     MemoryCopy(0xA4000040, 0x10000040, 0xFC0);
 
     Regs.COP0[COP0_Compare].Value = 0xFFFFFFFF;
     Regs.COP0[COP0_Status].Value  = 0x34000000;
     Regs.COP0[COP0_Config].Value  = 0x0006E463;
+    Regs.COP0[COP0_Random].Value  = 0x1F;
 
     RI_SELECT_REG_RW = bswap_32(0b1110);
     VI_INTR_REG_RW   = bswap_32(1023);

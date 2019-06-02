@@ -1,4 +1,4 @@
-#include "MI.h"
+#include "mi.h"
 
 #include "mem.h"
 #include "cpu.h"

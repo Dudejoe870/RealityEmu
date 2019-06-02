@@ -8,8 +8,9 @@
 #include "opcodetable.h"
 #include "mem.h"
 #include "exception.h"
-#include "MI.h"
+#include "mi.h"
 #include "config.h"
+#include "tlb.h"
 
 #define INST_OP_MSK     0b11111100000000000000000000000000
 #define INST_RS_MSK     0b00000011111000000000000000000000
@@ -329,6 +330,9 @@ void Step(void)
     VICycleCount += currInstCycles;
 
     Regs.COP0[COP0_Count].Value = (uint32_t)(Cycles >> 1);
+    if (Regs.COP0[COP0_Random].Value < Regs.COP0[COP0_Wired].Value 
+     || Regs.COP0[COP0_Random].Value == 0) Regs.COP0[COP0_Random].Value = 0x1F;
+    --Regs.COP0[COP0_Random].Value;
 
     if (!IsRunning) return;
 
@@ -987,36 +991,106 @@ static inline void MTC0(uint32_t Value)
     AdvancePC();
 }
 
-void COPz(uint32_t Value)
+static inline void TLBP(uint32_t Value)
 {
-    if (INST_COP(Value) == 0) // COP0
+    ProbeTLB();
+    AdvancePC();
+}
+
+static inline void TLBR(uint32_t Value)
+{
+    ReadTLBEntry();
+    AdvancePC();
+}
+
+static inline void TLBWI(uint32_t Value)
+{
+    WriteTLBEntryIndexed();
+    AdvancePC();
+}
+
+static inline void TLBWR(uint32_t Value)
+{
+    WriteTLBEntryRandom();
+    AdvancePC();
+}
+
+void COP0(uint32_t Value)
+{
+    switch (INST_RS(Value))
     {
-        switch (INST_RS(Value))
-        {
-            case 0b00001: // DMFC0
-                DMFC0(Value);
-                return;
-            case 0b00101: // DMTC0
-                DMTC0(Value);
-                return;
-            case 0b10000: // CO
-                switch (INST_FUNCT(Value))
-                {
-                    case 0b011000:
-                        ERET(Value);
-                        return;
-                }
-                break;
-            case 0b00000: // MFC0
-                MFC0(Value);
-                return;
-            case 0b00100: // MTC0
-                MTC0(Value);
-                return;
-        }
+        case 0b00001: // DMFC0
+            DMFC0(Value);
+            return;
+        case 0b00101: // DMTC0
+            DMTC0(Value);
+            return;
+        case 0b10000: // CO
+            switch (INST_FUNCT(Value))
+            {
+                case 0b011000: // ERET
+                    ERET(Value);
+                    return;
+                case 0b001000: // TLBP
+                    TLBP(Value);
+                    return;
+                case 0b000001: // TLBR
+                    TLBR(Value);
+                    return;
+                case 0b000010: // TLBWI
+                    TLBWI(Value);
+                    return;
+                case 0b000110: // TLBWR
+                    TLBWR(Value);
+                    return;
+            }
+            break;
+        case 0b00000: // MFC0
+            MFC0(Value);
+            return;
+        case 0b00100: // MTC0
+            MTC0(Value);
+            return;
     }
-    else if (INST_COP(Value) == 1) // COP1
+    UndefinedInstError(Value);
+}
+
+static inline void CFC1(uint32_t Value)
+{
+    if (INST_RD(Value) == 31 || INST_RD(Value) == 0)
     {
+        WriteGPR((uint32_t)ReadFPR(INST_RD(Value)), INST_RT(Value));
+    }
+    else
+    {
+        UndefinedInstError(Value);
+    }
+    AdvancePC();
+}
+
+static inline void CTC1(uint32_t Value)
+{
+    if (INST_RD(Value) == 31 || INST_RD(Value) == 0)
+    {
+        WriteFPR((uint32_t)ReadGPR(INST_RT(Value)), INST_RD(Value));
+    }
+    else
+    {
+        UndefinedInstError(Value);
+    }
+    AdvancePC();
+}
+
+void COP1(uint32_t Value)
+{
+    switch (INST_RS(Value))
+    {
+        case 0b00010: // CFC1
+            CFC1(Value);
+            return;
+        case 0b00110: // CTC1
+            CTC1(Value);
+            return;
     }
     UndefinedInstError(Value);
 }

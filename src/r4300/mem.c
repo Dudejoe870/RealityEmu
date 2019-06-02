@@ -3,6 +3,7 @@
 #include "config.h"
 #include "cpu.h"
 #include "exception.h"
+#include "tlb.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -573,15 +574,25 @@ static inline void NoEntryError(uint32_t Addr, bool Store)
     if ((Addr & 0xC0000000) == 0x80000000) IsRunning = false;
 }
 
-void WriteUInt8(uint8_t Value, uint32_t Addr)
+static inline int GetFinalTranslation(uint32_t Addr, mementry_t** Entry, size_t* Index, bool Store)
 {
-    mementry_t* Entry = GetMemEntry(Addr, true);
-    if (!Entry) 
+    uint32_t NonCachedAddr = TLBTranslateAddress(Addr);
+    *Entry = GetMemEntry(NonCachedAddr, Store);
+    if (!(*Entry))
     {
         NoEntryError(Addr, true);
-        return;
+        return 1;
     }
-    size_t Index = (Addr & 0x1FFFFFFF) - Entry->Base;
+    NonCachedAddr &= 0x1FFFFFFF;
+    *Index = NonCachedAddr - (*Entry)->Base;
+    return 0;
+}
+
+void WriteUInt8(uint8_t Value, uint32_t Addr)
+{
+    mementry_t* Entry;
+    size_t Index;
+    if (GetFinalTranslation(Addr, &Entry, &Index, true) != 0) return;
 
     ((uint8_t*)Entry->MemBlockWrite)[Index] = Value;
     if (Entry->WriteCallback) Entry->WriteCallback(Value, Addr);
@@ -589,13 +600,9 @@ void WriteUInt8(uint8_t Value, uint32_t Addr)
 
 uint8_t ReadUInt8(uint32_t Addr)
 {
-    mementry_t* Entry = GetMemEntry(Addr, false);
-    if (!Entry) 
-    {
-        NoEntryError(Addr, false);
-        return 0;
-    }
-    size_t Index = (Addr & 0x1FFFFFFF) - Entry->Base;
+    mementry_t* Entry;
+    size_t Index;
+    if (GetFinalTranslation(Addr, &Entry, &Index, false) != 0) return 0;
     
     if (Entry->ReadCallback) Entry->ReadCallback(Addr);
     return ((uint8_t*)Entry->MemBlockRead)[Index];
@@ -603,13 +610,9 @@ uint8_t ReadUInt8(uint32_t Addr)
 
 void WriteUInt16(uint16_t Value, uint32_t Addr)
 {
-    mementry_t* Entry = GetMemEntry(Addr, true);
-    if (!Entry) 
-    {
-        NoEntryError(Addr, true);
-        return;
-    }
-    size_t Index = (Addr & 0x1FFFFFFF) - Entry->Base;
+    mementry_t* Entry;
+    size_t Index;
+    if (GetFinalTranslation(Addr, &Entry, &Index, true) != 0) return;
 
     *(uint16_t*)(((uint8_t*)Entry->MemBlockWrite) + Index) = bswap_16(Value);
     if (Entry->WriteCallback) Entry->WriteCallback(Value, Addr);
@@ -617,13 +620,9 @@ void WriteUInt16(uint16_t Value, uint32_t Addr)
 
 uint16_t ReadUInt16(uint32_t Addr)
 {
-    mementry_t* Entry = GetMemEntry(Addr, false);
-    if (!Entry) 
-    {
-        NoEntryError(Addr, false);
-        return 0;
-    }
-    size_t Index = (Addr & 0x1FFFFFFF) - Entry->Base;
+    mementry_t* Entry;
+    size_t Index;
+    if (GetFinalTranslation(Addr, &Entry, &Index, false) != 0) return 0;
 
     if (Entry->ReadCallback) Entry->ReadCallback(Addr);
     return bswap_16(*(uint16_t*)(((uint8_t*)Entry->MemBlockRead) + Index));
@@ -631,13 +630,9 @@ uint16_t ReadUInt16(uint32_t Addr)
 
 void WriteUInt32(uint32_t Value, uint32_t Addr)
 {
-    mementry_t* Entry = GetMemEntry(Addr, true);
-    if (!Entry) 
-    {
-        NoEntryError(Addr, true);
-        return;
-    }
-    size_t Index = (Addr & 0x1FFFFFFF) - Entry->Base;
+    mementry_t* Entry;
+    size_t Index;
+    if (GetFinalTranslation(Addr, &Entry, &Index, true) != 0) return;
 
     *(uint32_t*)(((uint8_t*)Entry->MemBlockWrite) + Index) = bswap_32(Value);
     if (Entry->WriteCallback) Entry->WriteCallback(Value, Addr);
@@ -645,13 +640,9 @@ void WriteUInt32(uint32_t Value, uint32_t Addr)
 
 uint32_t ReadUInt32(uint32_t Addr)
 {
-    mementry_t* Entry = GetMemEntry(Addr, false);
-    if (!Entry) 
-    {
-        NoEntryError(Addr, false);
-        return 0;
-    }
-    size_t Index = (Addr & 0x1FFFFFFF) - Entry->Base;
+    mementry_t* Entry;
+    size_t Index;
+    if (GetFinalTranslation(Addr, &Entry, &Index, false) != 0) return 0;
 
     if (Entry->ReadCallback) Entry->ReadCallback(Addr);
     return bswap_32(*(uint32_t*)(((uint8_t*)Entry->MemBlockRead) + Index));
@@ -659,13 +650,9 @@ uint32_t ReadUInt32(uint32_t Addr)
 
 void WriteUInt64(uint64_t Value, uint32_t Addr)
 {
-    mementry_t* Entry = GetMemEntry(Addr, true);
-    if (!Entry) 
-    {
-        NoEntryError(Addr, true);
-        return;
-    }
-    size_t Index = (Addr & 0x1FFFFFFF) - Entry->Base;
+    mementry_t* Entry;
+    size_t Index;
+    if (GetFinalTranslation(Addr, &Entry, &Index, true) != 0) return;
 
     *(uint64_t*)(((uint8_t*)Entry->MemBlockWrite) + Index) = bswap_64(Value);
     if (Entry->WriteCallback) Entry->WriteCallback(Value, Addr);
@@ -673,13 +660,9 @@ void WriteUInt64(uint64_t Value, uint32_t Addr)
 
 uint64_t ReadUInt64(uint32_t Addr)
 {
-    mementry_t* Entry = GetMemEntry(Addr, false);
-    if (!Entry) 
-    {
-        NoEntryError(Addr, false);
-        return 0;
-    }
-    size_t Index = (Addr & 0x1FFFFFFF) - Entry->Base;
+    mementry_t* Entry;
+    size_t Index;
+    if (GetFinalTranslation(Addr, &Entry, &Index, false) != 0) return 0;
 
     if (Entry->ReadCallback) Entry->ReadCallback(Addr);
     return bswap_64(*(uint64_t*)(((uint8_t*)Entry->MemBlockRead) + Index));
@@ -687,20 +670,13 @@ uint64_t ReadUInt64(uint32_t Addr)
 
 void MemoryCopy(uint32_t Dest, uint32_t Source, size_t Length)
 {
-    mementry_t* DestEntry = GetMemEntry(Dest, true);
-    if (!DestEntry) 
-    {
-        NoEntryError(Dest, true);
-        return;
-    }
-    mementry_t* SrcEntry  = GetMemEntry(Source, false);
-    if (!SrcEntry)
-    {
-        NoEntryError(Source, false);
-        return;
-    }
-    size_t DestIndex = (Dest & 0x1FFFFFFF) - DestEntry->Base;
-    size_t SrcIndex  = (Source & 0x1FFFFFFF) - SrcEntry->Base;
+    mementry_t* DestEntry;
+    mementry_t* SrcEntry;
+    size_t DestIndex;
+    size_t SrcIndex;
+
+    GetFinalTranslation(Dest,   &DestEntry, &DestIndex, true);
+    GetFinalTranslation(Source, &SrcEntry,  &SrcIndex,  false);
 
     memcpy(((uint8_t*)DestEntry->MemBlockWrite) + DestIndex, ((uint8_t*)SrcEntry->MemBlockRead) + SrcIndex, Length);
 }
