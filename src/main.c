@@ -47,6 +47,7 @@ int main(int argc, char** argv)
 
     Config.ExpansionPak = true;
     Config.DebugLogging = true;
+    Config.Region       = REG_NTSC;
 
     CPUInit(ROM, (size_t)len);
     

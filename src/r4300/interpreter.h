@@ -3,7 +3,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-bool GetIsBranching(void);
+bool     GetIsBranching(void);
+__int128 GetAllCycles  (void);
 
 void Step(void); // Step the CPU.
 

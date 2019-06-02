@@ -9,6 +9,7 @@
 #include "mem.h"
 #include "exception.h"
 #include "MI.h"
+#include "config.h"
 
 #define INST_OP_MSK     0b11111100000000000000000000000000
 #define INST_RS_MSK     0b00000011111000000000000000000000
@@ -42,11 +43,20 @@
 
 bool IsBranching = false;
 uint32_t currTarget = 0;
-uint64_t Cycles     = 0;
+
+uint8_t  currInstCycles = 0;
+uint64_t Cycles         = 0;
+__int128 AllCycles      = 0;
+uint32_t VICycleCount   = 0;
 
 bool GetIsBranching(void)
 {
     return IsBranching;
+}
+
+__int128 GetAllCycles(void)
+{
+    return AllCycles;
 }
 
 static inline void UndefinedInstError(uint32_t Value)
@@ -299,26 +309,35 @@ void Step(void)
         Cycles = 0;
     }
 
+    uint8_t RefreshRate = (Config.Region == REG_NTSC || Config.Region == REG_MPAL) ? 60 : 50;
+    if (VICycleCount >= (uint32_t)(93750000 / RefreshRate / (bswap_32(VI_V_SYNC_REG_RW) & 0x3FF)))
+    {
+        if (CurrentScanline >= (bswap_32(VI_V_SYNC_REG_RW) & 0x3FF)) CurrentScanline = 0;
+        else ++CurrentScanline;
+        if (CurrentScanline == bswap_32(VI_INTR_REG_RW))
+            InvokeMIInterrupt(MI_INTR_VI);
+        VI_CURRENT_REG_R = bswap_32(CurrentScanline);
+
+        VICycleCount = 0;
+    }
+
+    currInstCycles = 1;
     if (inst != 0) op.Interpret(inst);
     else AdvancePC();
-    Cycles += 1;
+    Cycles += currInstCycles;
+    AllCycles += currInstCycles;
+    VICycleCount += currInstCycles;
 
     Regs.COP0[COP0_Count].Value = (uint32_t)(Cycles >> 1);
 
     if (!IsRunning) return;
 
-    if (ShouldBranch) // If we should branch (aka the last instruction was a branch instruction)
+    if (ShouldBranch) // If we should branch (aka the last instruction was a branch instruction).
     {
         Regs.PC.Value = currTarget; // Then set to the PC the target.
         IsBranching = false; // And reset the variables.
         currTarget = 0;
     }
-
-    if (CurrentScanline >= (bswap_32(VI_V_SYNC_REG_RW) & 0x3FF)) CurrentScanline = 0;
-    else ++CurrentScanline;
-    if (CurrentScanline == bswap_32(VI_INTR_REG_RW))
-        InvokeMIInterrupt(MI_INTR_VI);
-    VI_CURRENT_REG_RW = bswap_32(CurrentScanline);
 
     PollInt();
 }
@@ -364,42 +383,42 @@ static inline void DADDU(uint32_t Value)
 static inline void DDIV(uint32_t Value)
 {
     DDIVReg(INST_RS(Value), INST_RT(Value));
-    Cycles += 68;
+    currInstCycles = 69;
     AdvancePC();
 }
 
 static inline void DDIVU(uint32_t Value)
 {
     DDIVUReg(INST_RS(Value), INST_RT(Value));
-    Cycles += 68;
+    currInstCycles = 69;
     AdvancePC();
 }
 
 static inline void DIV(uint32_t Value)
 {
     DIVReg(INST_RS(Value), INST_RT(Value));
-    Cycles += 36;
+    currInstCycles = 37;
     AdvancePC();
 }
 
 static inline void DIVU(uint32_t Value)
 {
     DIVUReg(INST_RS(Value), INST_RT(Value));
-    Cycles += 36;
+    currInstCycles = 37;
     AdvancePC();
 }
 
 static inline void DMULT(uint32_t Value)
 {
     DMULTReg(INST_RS(Value), INST_RT(Value));
-    Cycles += 7;
+    currInstCycles = 8;
     AdvancePC();
 }
 
 static inline void DMULTU(uint32_t Value)
 {
     DMULTUReg(INST_RS(Value), INST_RT(Value));
-    Cycles += 7;
+    currInstCycles = 8;
     AdvancePC();
 }
 
@@ -510,14 +529,14 @@ static inline void MTLO(uint32_t Value)
 static inline void MULT(uint32_t Value)
 {
     MULTReg(INST_RS(Value), INST_RT(Value));
-    Cycles += 4;
+    currInstCycles = 5;
     AdvancePC();
 }
 
 static inline void MULTU(uint32_t Value)
 {
     MULTUReg(INST_RS(Value), INST_RT(Value));
-    Cycles += 4;
+    currInstCycles = 5;
     AdvancePC();
 }
 

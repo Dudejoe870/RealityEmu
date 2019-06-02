@@ -83,6 +83,12 @@ void MI_INTR_MASK_REG_WRITE_EVENT(uint64_t Value, uint32_t Addr)
     MI_INTR_REG_W = 0;
 }
 
+void VI_CURRENT_REG_WRITE_EVENT(uint64_t Value, uint32_t Addr)
+{
+    MI_INTR_REG_R &= ~(bswap_32(0x08)); // Clear the VI Interrupt
+    VI_CURRENT_REG_W = 0;
+}
+
 void MemoryInit(void* ROM, size_t ROMSize)
 {
     size_t i = 0;
@@ -226,11 +232,11 @@ void MemoryInit(void* ROM, size_t ROMSize)
 
     MemEntries[i].Base          = 0x04400010;
     MemEntries[i].EndAddr       = 0x04400013;
-    MemEntries[i].MemBlockRead  = &VI_CURRENT_REG_RW;
-    MemEntries[i].MemBlockWrite = &VI_CURRENT_REG_RW;
+    MemEntries[i].MemBlockRead  = &VI_CURRENT_REG_R;
+    MemEntries[i].MemBlockWrite = &VI_CURRENT_REG_W;
     MemEntries[i].RW            = true;
     MemEntries[i].ShouldFree    = false;
-    MemEntries[i].WriteCallback = NULL;
+    MemEntries[i].WriteCallback = VI_CURRENT_REG_WRITE_EVENT;
     MemEntries[i].ReadCallback  = NULL;
     MemEntries[i].Set = true;
     ++i;

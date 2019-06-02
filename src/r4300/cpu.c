@@ -8,13 +8,49 @@
 #include "cic.h"
 #include "opcodetable.h"
 #include "interpreter.h"
+#include "config.h"
+
+#define MEASURE_MHZ
+
+#ifdef MEASURE_MHZ
+#include <time.h>
+
+double CPUMHz = 0;
+#endif
+
+#ifdef MEASURE_MHZ
+void* MeasureMHz(void* vargp)
+{
+    uint64_t Count = 0;
+    while (IsRunning)
+    {
+        if (Count >= 1000)
+        {
+            float TimeSeconds = ((float)clock()) / CLOCKS_PER_SEC;
+
+            CPUMHz = ((long)GetAllCycles() / 1000000) / TimeSeconds;
+            Count = 0;
+        }
+        ++Count;
+    }
+    return NULL;
+}
+#endif
 
 void* RunCPU(void* vargp)
 {
+    #ifdef MEASURE_MHZ
+    pthread_t MeasureThread;
+
+    pthread_create(&MeasureThread, NULL, MeasureMHz, NULL);
+    #endif
     while (IsRunning)
     {
         Step();
     }
+    #ifdef MEASURE_MHZ
+    printf("Finished: CPU is running at %fMHz\n", CPUMHz);
+    #endif
     return NULL;
 }
 
@@ -22,10 +58,10 @@ void CPUInit(void* ROM, size_t ROMSize)
 {
     MemoryInit(ROM, ROMSize);
 
-    uint32_t RomType = 0;
+    uint32_t RomType   = 0;
     uint32_t ResetType = 0;
     uint32_t osVersion = 0;
-    uint32_t TVType = 1;
+    uint32_t TVType = (uint32_t)Config.Region;
 
     Regs.GPR[1].Value  = 0x0000000000000001;
     Regs.GPR[2].Value  = 0x000000000EBDA536;
