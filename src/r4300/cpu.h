@@ -53,6 +53,11 @@ regs_t Regs;
 
 bool IsRunning;
 
+#define MEASURE_MHZ
+#ifdef MEASURE_MHZ
+double CPUMHz;
+#endif
+
 void CPUInit(void* ROM, size_t ROMSize);
 
 void CPUDeInit(void);

@@ -11,12 +11,8 @@
 #include "../config.h"
 #include "../rdp/rdp.h"
 
-#define MEASURE_MHZ
-
 #ifdef MEASURE_MHZ
 #include <time.h>
-
-double CPUMHz = 0;
 #endif
 
 #ifdef MEASURE_MHZ
@@ -49,9 +45,6 @@ void* RunCPU(void* vargp)
     {
         Step();
     }
-    #ifdef MEASURE_MHZ
-    printf("Finished: CPU is running at %fMHz\n", CPUMHz);
-    #endif
     return NULL;
 }
 

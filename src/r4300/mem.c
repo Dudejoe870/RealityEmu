@@ -103,6 +103,7 @@ void MemoryInit(void* ROM, size_t ROMSize)
 
     size_t RDRAM_Size = (Config.ExpansionPak) ? 8388608 : 4194304;
 
+    // Make sure these are always from the lowest Memory address up to the highest, in order!
     RDRAM_RW = malloc(RDRAM_Size);
     MemEntries[i].Base          = 0x00000000;
     MemEntries[i].EndAddr       = 0x00000000 + (RDRAM_Size - 1);
@@ -608,7 +609,8 @@ mementry_t* GetMemEntry(uint32_t Addr, bool Store)
     uint32_t RealAddress = Addr & 0x1FFFFFFF;
     for (size_t i = 0; i < MEMORY_ENTRIES; ++i)
     {
-        if (MemEntries[i].EndAddr < RealAddress || MemEntries[i].Base > RealAddress) continue;
+        if (MemEntries[i].Base    > RealAddress) continue;
+        if (MemEntries[i].EndAddr < RealAddress) continue;
 
         if (MemEntries[i].EndAddr >= RealAddress)
             return &MemEntries[i];
@@ -619,13 +621,13 @@ mementry_t* GetMemEntry(uint32_t Addr, bool Store)
     return NULL;
 }
 
-static inline void NoEntryError(uint32_t Addr, bool Store)
+__attribute__((__always_inline__)) static inline void NoEntryError(uint32_t Addr, bool Store)
 {
     fprintf(stderr, "ERROR: Unmapped Memory Address at 0x%x!  PC: 0x%x, Read/Write: %s\n", Addr, (uint32_t)Regs.PC.Value, Store ? "Write" : "Read");
     if ((Addr & 0xC0000000) == 0x80000000) IsRunning = false;
 }
 
-static inline int GetFinalTranslation(uint32_t Addr, mementry_t** Entry, size_t* Index, bool Store)
+__attribute__((__always_inline__)) static inline int GetFinalTranslation(uint32_t Addr, mementry_t** Entry, size_t* Index, bool Store)
 {
     uint32_t NonCachedAddr = TLBTranslateAddress(Addr);
     *Entry = GetMemEntry(NonCachedAddr, Store);

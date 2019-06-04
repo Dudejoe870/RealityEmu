@@ -45,10 +45,10 @@
 bool IsBranching = false;
 uint32_t currTarget = 0;
 
-uint8_t  currInstCycles = 0;
-uint64_t Cycles         = 0;
-unsigned __int128 AllCycles      = 0;
-uint32_t VICycleCount   = 0;
+uint8_t  currInstCycles     = 0;
+uint64_t Cycles             = 0;
+unsigned __int128 AllCycles = 0;
+uint32_t VICycleCount       = 0;
 
 bool GetIsBranching(void)
 {
@@ -60,228 +60,228 @@ __int128 GetAllCycles(void)
     return AllCycles;
 }
 
-static inline void UndefinedInstError(uint32_t Value)
+__attribute__((__always_inline__)) static inline void UndefinedInstError(uint32_t Value)
 {
     fprintf(stderr, "ERROR: Unimplemented Instruction 0x%x!  PC: 0x%x\n", Value, (uint32_t)Regs.PC.Value);
     IsRunning = false;
 }
 
-static inline void ADDReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void ADDReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
     WriteGPR((long)((uint32_t)ReadGPR(Reg1) + (uint32_t)ReadGPR(Reg2)), Dst);
 }
 
-static inline void ADDImm(uint8_t Reg, uint16_t Imm, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void ADDImm(uint8_t Reg, uint16_t Imm, uint8_t Dst)
 {
     WriteGPR((long)((uint32_t)ReadGPR(Reg) + (short)Imm), Dst);
 }
 
-static inline void SUBReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void SUBReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
     WriteGPR((long)((uint32_t)ReadGPR(Reg1) - (uint32_t)ReadGPR(Reg2)), Dst);
 }
 
-static inline void DIVReg(uint8_t Reg1, uint8_t Reg2)
+__attribute__((__always_inline__)) static inline void DIVReg(uint8_t Reg1, uint8_t Reg2)
 {
     if ((uint32_t)ReadGPR(Reg2) == 0) return;
     WriteLO((long)((int)ReadGPR(Reg1) / (int)ReadGPR(Reg2)));
     WriteHI((long)((int)ReadGPR(Reg1) % (int)ReadGPR(Reg2)));
 }
 
-static inline void DIVUReg(uint8_t Reg1, uint8_t Reg2)
+__attribute__((__always_inline__)) static inline void DIVUReg(uint8_t Reg1, uint8_t Reg2)
 {
     if ((uint32_t)ReadGPR(Reg2) == 0) return;
     WriteLO((uint32_t)ReadGPR(Reg1) / (uint32_t)ReadGPR(Reg2));
     WriteHI((uint32_t)ReadGPR(Reg1) % (uint32_t)ReadGPR(Reg2));
 }
 
-static inline void MULTReg(uint8_t Reg1, uint8_t Reg2)
+__attribute__((__always_inline__)) static inline void MULTReg(uint8_t Reg1, uint8_t Reg2)
 {
     long Res = (long)((int)ReadGPR(Reg1) * (int)ReadGPR(Reg2));
     WriteLO(Res & 0xFFFFFFFF);
     WriteHI(Res >> 32);
 }
 
-static inline void MULTUReg(uint8_t Reg1, uint8_t Reg2)
+__attribute__((__always_inline__)) static inline void MULTUReg(uint8_t Reg1, uint8_t Reg2)
 {
     uint64_t Res = (uint32_t)ReadGPR(Reg1) * (uint32_t)ReadGPR(Reg2);
     WriteLO((uint32_t)Res);
     WriteHI((uint32_t)(Res >> 32));
 }
 
-static inline void SLLImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
+__attribute__((__always_inline__)) static inline void SLLImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
 {
     WriteGPR(ReadGPR(Reg) << sa, Dst);
 }
 
-static inline void SLLReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void SLLReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
     WriteGPR((uint32_t)ReadGPR(Reg1) << (ReadGPR(Reg2) & 0x1F), Dst);
 }
 
-static inline void SRAImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
+__attribute__((__always_inline__)) static inline void SRAImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
 {
     WriteGPR((long)((int)ReadGPR(Reg) >> sa), Dst);
 }
 
-static inline void SRAReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void SRAReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
     WriteGPR((long)((int)ReadGPR(Reg1) >> (ReadGPR(Reg2) & 0x1F)), Dst);
 }
 
-static inline void SRLImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
+__attribute__((__always_inline__)) static inline void SRLImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
 {
     WriteGPR((uint32_t)ReadGPR(Reg) >> sa, Dst);
 }
 
-static inline void SRLReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void SRLReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
     WriteGPR(ReadGPR(Reg1) >> (ReadGPR(Reg2) & 0x1F), Dst);
 }
 
-static inline void DADDReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void DADDReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
     WriteGPR(ReadGPR(Reg1) + ReadGPR(Reg2), Dst);
 }
 
-static inline void DADDImm(uint8_t Reg1, uint16_t Imm, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void DADDImm(uint8_t Reg1, uint16_t Imm, uint8_t Dst)
 {
     WriteGPR(ReadGPR(Reg1) + (short)Imm, Dst);
 }
 
-static inline void DSUBReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void DSUBReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
     WriteGPR(ReadGPR(Reg1) - ReadGPR(Reg2), Dst);
 }
 
-static inline void DDIVReg(uint8_t Reg1, uint8_t Reg2)
+__attribute__((__always_inline__)) static inline void DDIVReg(uint8_t Reg1, uint8_t Reg2)
 {
     if (ReadGPR(Reg2) == 0) return;
     WriteLO((long)((long)ReadGPR(Reg1) / (long)ReadGPR(Reg2)));
     WriteHI((long)((long)ReadGPR(Reg1) % (long)ReadGPR(Reg2)));
 }
 
-static inline void DDIVUReg(uint8_t Reg1, uint8_t Reg2)
+__attribute__((__always_inline__)) static inline void DDIVUReg(uint8_t Reg1, uint8_t Reg2)
 {
     if (ReadGPR(Reg2) == 0) return;
     WriteLO(ReadGPR(Reg1) / ReadGPR(Reg2));
     WriteHI(ReadGPR(Reg1) % ReadGPR(Reg2));
 }
 
-static inline void DMULTReg(uint8_t Reg1, uint8_t Reg2)
+__attribute__((__always_inline__)) static inline void DMULTReg(uint8_t Reg1, uint8_t Reg2)
 {
     __int128 Res = (long)ReadGPR(Reg1) * (long)ReadGPR(Reg2);
     WriteLO(Res);
     WriteHI(Res >> 64);
 }
 
-static inline void DMULTUReg(uint8_t Reg1, uint8_t Reg2)
+__attribute__((__always_inline__)) static inline void DMULTUReg(uint8_t Reg1, uint8_t Reg2)
 {
     __int128 Res = (uint64_t)ReadGPR(Reg1) * (uint64_t)ReadGPR(Reg2);
     WriteLO((uint64_t)Res);
     WriteHI((uint64_t)(Res >> 64));
 }
 
-static inline void DSLLImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
+__attribute__((__always_inline__)) static inline void DSLLImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
 {
     WriteGPR(ReadGPR(Reg) << sa, Dst);
 }
 
-static inline void DSLLReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void DSLLReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
     WriteGPR(ReadGPR(Reg1) << (ReadGPR(Reg2) & 0x1F), Dst);
 }
 
-static inline void DSRAImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
+__attribute__((__always_inline__)) static inline void DSRAImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
 {
     WriteGPR((long)ReadGPR(Reg) >> sa, Dst);
 }
 
-static inline void DSRAReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void DSRAReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
     WriteGPR((long)ReadGPR(Reg1) >> (ReadGPR(Reg2) & 0x1F), Dst);
 }
 
-static inline void DSRLImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
+__attribute__((__always_inline__)) static inline void DSRLImm(uint8_t Reg, uint8_t Dst, uint8_t sa)
 {
     WriteGPR(ReadGPR(Reg) >> sa, Dst);
 }
 
-static inline void DSRLReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void DSRLReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
     WriteGPR(ReadGPR(Reg1) >> (ReadGPR(Reg2) & 0x1F), Dst);
 }
 
-static inline void ANDReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void ANDReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
     WriteGPR((long)((uint32_t)ReadGPR(Reg1) & (uint32_t)ReadGPR(Reg2)), Dst);
 }
 
-static inline void ANDImm(uint8_t Reg, uint16_t Imm, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void ANDImm(uint8_t Reg, uint16_t Imm, uint8_t Dst)
 {
     WriteGPR((long)((uint32_t)ReadGPR(Reg) & Imm), Dst);
 }
 
-static inline void ORReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void ORReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
     WriteGPR((long)((uint32_t)ReadGPR(Reg1) | (uint32_t)ReadGPR(Reg2)), Dst);
 }
 
-static inline void ORImm(uint8_t Reg, uint16_t Imm, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void ORImm(uint8_t Reg, uint16_t Imm, uint8_t Dst)
 {
     WriteGPR((long)((uint32_t)ReadGPR(Reg) | Imm), Dst);
 }
 
-static inline void XORReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void XORReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
     WriteGPR((long)((uint32_t)ReadGPR(Reg1) ^ (uint32_t)ReadGPR(Reg2)), Dst);
 }
 
-static inline void XORImm(uint8_t Reg, uint16_t Imm, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void XORImm(uint8_t Reg, uint16_t Imm, uint8_t Dst)
 {
     WriteGPR((long)((uint32_t)ReadGPR(Reg) ^ Imm), Dst);
 }
 
-static inline void NORReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
+__attribute__((__always_inline__)) static inline void NORReg(uint8_t Reg1, uint8_t Reg2, uint8_t Dst)
 {
     WriteGPR((long)(~((uint32_t)ReadGPR(Reg1) | (uint32_t)ReadGPR(Reg2))), Dst);
 }
 
-static inline void SETCond(uint8_t Dst, bool Cond)
+__attribute__((__always_inline__)) static inline void SETCond(uint8_t Dst, bool Cond)
 {
     WriteGPR((uint32_t)Cond, Dst);
 }
 
-static inline void BRANCHCond(uint16_t Imm, bool Cond)
+__attribute__((__always_inline__)) static inline void BRANCHCond(uint16_t Imm, bool Cond)
 {
     IsBranching = Cond;
     if (Cond) currTarget = ((uint32_t)Regs.PC.Value + 4) + (int)(((short)Imm) << 2);
 }
 
-static inline void BRANCHCondLikely(uint16_t Imm, bool Cond)
+__attribute__((__always_inline__)) static inline void BRANCHCondLikely(uint16_t Imm, bool Cond)
 {
     BRANCHCond(Imm, Cond);
     if (!Cond) AdvancePC();
 }
 
-static inline void TRAPCond(bool Cond)
+__attribute__((__always_inline__)) static inline void TRAPCond(bool Cond)
 {
     if (Cond) InvokeTrap();
 }
 
-static inline void JUMPReg(uint8_t Reg)
+__attribute__((__always_inline__)) static inline void JUMPReg(uint8_t Reg)
 {
     IsBranching = true;
     currTarget  = ReadGPR(Reg);
 }
 
-static inline void JUMPImm(uint32_t Target)
+__attribute__((__always_inline__)) static inline void JUMPImm(uint32_t Target)
 {
     IsBranching = true;
     currTarget  = (Target << 2) | (((uint32_t)Regs.PC.Value + 4) & 0xF0000000);
 }
 
-static inline void Link(void)
+__attribute__((__always_inline__)) static inline void Link(void)
 {
     Regs.GPR[31].Value = (uint32_t)Regs.PC.Value + 8; // Hyah!
 }
@@ -292,7 +292,7 @@ void Step(void)
 {
     bool ShouldBranch = IsBranching;
 
-    uint32_t Inst = ReadUInt32((uint32_t)Regs.PC.Value);
+    uint32_t Inst = bswap_32(*(uint32_t*)GetRealMemoryLoc((uint32_t)Regs.PC.Value));
     opcode_t Op   = OpcodeTable[INST_OP(Inst)];
 
     if (Op.Interpret == NULL && Inst != 0) 
@@ -346,314 +346,314 @@ void Step(void)
     PollInt();
 }
 
-static inline void ADD(uint32_t Value)
+__attribute__((__always_inline__)) static inline void ADD(uint32_t Value)
 {
     // TODO: Correctly check for Overflow and Underflow and throw the exceptions accordingly.
     ADDReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void ADDU(uint32_t Value)
+__attribute__((__always_inline__)) static inline void ADDU(uint32_t Value)
 {
     ADDReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void AND(uint32_t Value)
+__attribute__((__always_inline__)) static inline void AND(uint32_t Value)
 {
     ANDReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void BREAK(uint32_t Value)
+__attribute__((__always_inline__)) static inline void BREAK(uint32_t Value)
 {
     InvokeBreak();
     AdvancePC();
 }
 
-static inline void DADD(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DADD(uint32_t Value)
 {
     // TODO: Correctly check for Overflow and Underflow and throw the exceptions accordingly.
     DADDReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void DADDU(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DADDU(uint32_t Value)
 {
     DADDReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void DDIV(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DDIV(uint32_t Value)
 {
     DDIVReg(INST_RS(Value), INST_RT(Value));
     currInstCycles = 69;
     AdvancePC();
 }
 
-static inline void DDIVU(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DDIVU(uint32_t Value)
 {
     DDIVUReg(INST_RS(Value), INST_RT(Value));
     currInstCycles = 69;
     AdvancePC();
 }
 
-static inline void DIV(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DIV(uint32_t Value)
 {
     DIVReg(INST_RS(Value), INST_RT(Value));
     currInstCycles = 37;
     AdvancePC();
 }
 
-static inline void DIVU(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DIVU(uint32_t Value)
 {
     DIVUReg(INST_RS(Value), INST_RT(Value));
     currInstCycles = 37;
     AdvancePC();
 }
 
-static inline void DMULT(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DMULT(uint32_t Value)
 {
     DMULTReg(INST_RS(Value), INST_RT(Value));
     currInstCycles = 8;
     AdvancePC();
 }
 
-static inline void DMULTU(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DMULTU(uint32_t Value)
 {
     DMULTUReg(INST_RS(Value), INST_RT(Value));
     currInstCycles = 8;
     AdvancePC();
 }
 
-static inline void DSLL(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DSLL(uint32_t Value)
 {
     DSLLImm(INST_RT(Value), INST_RD(Value), INST_SA(Value));
     AdvancePC();
 }
 
-static inline void DSLLV(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DSLLV(uint32_t Value)
 {
     DSLLReg(INST_RT(Value), INST_RS(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void DSLL32(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DSLL32(uint32_t Value)
 {
     DSLLImm(INST_RT(Value), INST_RD(Value), INST_SA(Value) + 32);
     AdvancePC();
 }
 
-static inline void DSRA(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DSRA(uint32_t Value)
 {
     DSRAImm(INST_RT(Value), INST_RD(Value), INST_SA(Value));
     AdvancePC();
 }
 
-static inline void DSRAV(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DSRAV(uint32_t Value)
 {
     DSRAReg(INST_RT(Value), INST_RS(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void DSRA32(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DSRA32(uint32_t Value)
 {
     DSRAImm(INST_RT(Value), INST_RD(Value), INST_SA(Value) + 32);
     AdvancePC();
 }
 
-static inline void DSRL(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DSRL(uint32_t Value)
 {
     DSRLImm(INST_RT(Value), INST_RD(Value), INST_SA(Value));
     AdvancePC();
 }
 
-static inline void DSRLV(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DSRLV(uint32_t Value)
 {
     DSRLReg(INST_RT(Value), INST_RS(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void DSRL32(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DSRL32(uint32_t Value)
 {
     DSRLImm(INST_RT(Value), INST_RD(Value), INST_SA(Value) + 32);
     AdvancePC();
 }
 
-static inline void DSUB(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DSUB(uint32_t Value)
 {
     // TODO: Correctly check for Overflow and Underflow and throw the exceptions accordingly.
     DSUBReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void DSUBU(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DSUBU(uint32_t Value)
 {
     DSUBReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void JALR(uint32_t Value)
+__attribute__((__always_inline__)) static inline void JALR(uint32_t Value)
 {
     Link();
     JUMPReg(INST_RS(Value));
     AdvancePC();
 }
 
-static inline void JR(uint32_t Value)
+__attribute__((__always_inline__)) static inline void JR(uint32_t Value)
 {
     JUMPReg(INST_RS(Value));
     AdvancePC();
 }
 
-static inline void MFHI(uint32_t Value)
+__attribute__((__always_inline__)) static inline void MFHI(uint32_t Value)
 {
     WriteGPR(ReadHI(), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void MFLO(uint32_t Value)
+__attribute__((__always_inline__)) static inline void MFLO(uint32_t Value)
 {
     WriteGPR(ReadLO(), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void MTHI(uint32_t Value)
+__attribute__((__always_inline__)) static inline void MTHI(uint32_t Value)
 {
     WriteHI(ReadGPR(INST_RS(Value)));
     AdvancePC();
 }
 
-static inline void MTLO(uint32_t Value)
+__attribute__((__always_inline__)) static inline void MTLO(uint32_t Value)
 {
     WriteLO(ReadGPR(INST_RS(Value)));
     AdvancePC();
 }
 
-static inline void MULT(uint32_t Value)
+__attribute__((__always_inline__)) static inline void MULT(uint32_t Value)
 {
     MULTReg(INST_RS(Value), INST_RT(Value));
     currInstCycles = 5;
     AdvancePC();
 }
 
-static inline void MULTU(uint32_t Value)
+__attribute__((__always_inline__)) static inline void MULTU(uint32_t Value)
 {
     MULTUReg(INST_RS(Value), INST_RT(Value));
     currInstCycles = 5;
     AdvancePC();
 }
 
-static inline void NOR(uint32_t Value)
+__attribute__((__always_inline__)) static inline void NOR(uint32_t Value)
 {
     NORReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void OR(uint32_t Value)
+__attribute__((__always_inline__)) static inline void OR(uint32_t Value)
 {
     ORReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void SLL(uint32_t Value)
+__attribute__((__always_inline__)) static inline void SLL(uint32_t Value)
 {
     SLLImm(INST_RT(Value), INST_RD(Value), INST_SA(Value));
     AdvancePC();
 }
 
-static inline void SLLV(uint32_t Value)
+__attribute__((__always_inline__)) static inline void SLLV(uint32_t Value)
 {
     SLLReg(INST_RT(Value), INST_RS(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void SLT(uint32_t Value)
+__attribute__((__always_inline__)) static inline void SLT(uint32_t Value)
 {
     SETCond(INST_RD(Value), (long)ReadGPR(INST_RS(Value)) < (long)ReadGPR(INST_RT(Value)));
     AdvancePC();
 }
 
-static inline void SLTU(uint32_t Value)
+__attribute__((__always_inline__)) static inline void SLTU(uint32_t Value)
 {
     SETCond(INST_RD(Value), ReadGPR(INST_RS(Value)) < ReadGPR(INST_RT(Value)));
     AdvancePC();
 }
 
-static inline void SRA(uint32_t Value)
+__attribute__((__always_inline__)) static inline void SRA(uint32_t Value)
 {
     SRAImm(INST_RT(Value), INST_RD(Value), INST_SA(Value));
     AdvancePC();
 }
 
-static inline void SRAV(uint32_t Value)
+__attribute__((__always_inline__)) static inline void SRAV(uint32_t Value)
 {
     SRAReg(INST_RT(Value), INST_RS(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void SRL(uint32_t Value)
+__attribute__((__always_inline__)) static inline void SRL(uint32_t Value)
 {
     SRLImm(INST_RT(Value), INST_RD(Value), INST_SA(Value));
     AdvancePC();
 }
 
-static inline void SRLV(uint32_t Value)
+__attribute__((__always_inline__)) static inline void SRLV(uint32_t Value)
 {
     SRLReg(INST_RT(Value), INST_RS(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void SUB(uint32_t Value)
+__attribute__((__always_inline__)) static inline void SUB(uint32_t Value)
 {
     // TODO: Correctly check for Overflow and Underflow and throw the exceptions accordingly.
     SUBReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void SUBU(uint32_t Value)
+__attribute__((__always_inline__)) static inline void SUBU(uint32_t Value)
 {
     SUBReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void TEQ(uint32_t Value)
+__attribute__((__always_inline__)) static inline void TEQ(uint32_t Value)
 {
     TRAPCond((uint32_t)ReadGPR(INST_RS(Value)) == (uint32_t)ReadGPR(INST_RT(Value)));
     AdvancePC();
 }
 
-static inline void TGE(uint32_t Value)
+__attribute__((__always_inline__)) static inline void TGE(uint32_t Value)
 {
     TRAPCond((int)ReadGPR(INST_RS(Value)) >= (int)ReadGPR(INST_RT(Value)));
     AdvancePC();
 }
 
-static inline void TGEU(uint32_t Value)
+__attribute__((__always_inline__)) static inline void TGEU(uint32_t Value)
 {
     TRAPCond((uint32_t)ReadGPR(INST_RS(Value)) >= (uint32_t)ReadGPR(INST_RT(Value)));
     AdvancePC();
 }
 
-static inline void TLT(uint32_t Value)
+__attribute__((__always_inline__)) static inline void TLT(uint32_t Value)
 {
     TRAPCond((int)ReadGPR(INST_RS(Value)) < (int)ReadGPR(INST_RT(Value)));
     AdvancePC();
 }
 
-static inline void TLTU(uint32_t Value)
+__attribute__((__always_inline__)) static inline void TLTU(uint32_t Value)
 {
     TRAPCond((uint32_t)ReadGPR(INST_RS(Value)) < (uint32_t)ReadGPR(INST_RT(Value)));
     AdvancePC();
 }
 
-static inline void TNE(uint32_t Value)
+__attribute__((__always_inline__)) static inline void TNE(uint32_t Value)
 {
     TRAPCond((uint32_t)ReadGPR(INST_RS(Value)) != (uint32_t)ReadGPR(INST_RT(Value)));
     AdvancePC();
 }
 
-static inline void XOR(uint32_t Value)
+__attribute__((__always_inline__)) static inline void XOR(uint32_t Value)
 {
     XORReg(INST_RS(Value), INST_RT(Value), INST_RD(Value));
     AdvancePC();
@@ -819,89 +819,89 @@ void SPECIAL(uint32_t Value)
     UndefinedInstError(Value);
 }
 
-static inline void BGEZ(uint32_t Value)
+__attribute__((__always_inline__)) static inline void BGEZ(uint32_t Value)
 {
     BRANCHCond(INST_IMM(Value), (int)ReadGPR(INST_RS(Value)) >= 0);
     AdvancePC();
 }
 
-static inline void BGEZAL(uint32_t Value)
+__attribute__((__always_inline__)) static inline void BGEZAL(uint32_t Value)
 {
     Link();
     BRANCHCond(INST_IMM(Value), (int)ReadGPR(INST_RS(Value)) >= 0);
     AdvancePC();
 }
 
-static inline void BGEZALL(uint32_t Value)
+__attribute__((__always_inline__)) static inline void BGEZALL(uint32_t Value)
 {
     Link();
     BRANCHCondLikely(INST_IMM(Value), (int)ReadGPR(INST_RS(Value)) >= 0);
     AdvancePC();
 }
 
-static inline void BGEZL(uint32_t Value)
+__attribute__((__always_inline__)) static inline void BGEZL(uint32_t Value)
 {
     BRANCHCondLikely(INST_IMM(Value), (int)ReadGPR(INST_RS(Value)) >= 0);
     AdvancePC();
 }
 
-static inline void BLTZ(uint32_t Value)
+__attribute__((__always_inline__)) static inline void BLTZ(uint32_t Value)
 {
     BRANCHCond(INST_IMM(Value), (int)ReadGPR(INST_RS(Value)) < 0);
     AdvancePC();
 }
 
-static inline void BLTZAL(uint32_t Value)
+__attribute__((__always_inline__)) static inline void BLTZAL(uint32_t Value)
 {
     Link();
     BRANCHCond(INST_IMM(Value), (int)ReadGPR(INST_RS(Value)) < 0);
     AdvancePC();
 }
 
-static inline void BLTZALL(uint32_t Value)
+__attribute__((__always_inline__)) static inline void BLTZALL(uint32_t Value)
 {
     Link();
     BRANCHCondLikely(INST_IMM(Value), (int)ReadGPR(INST_RS(Value)) < 0);
     AdvancePC();
 }
 
-static inline void BLTZL(uint32_t Value)
+__attribute__((__always_inline__)) static inline void BLTZL(uint32_t Value)
 {
     BRANCHCondLikely(INST_IMM(Value), (int)ReadGPR(INST_RS(Value)) < 0);
     AdvancePC();
 }
 
-static inline void TEQI(uint32_t Value)
+__attribute__((__always_inline__)) static inline void TEQI(uint32_t Value)
 {
     TRAPCond((uint32_t)ReadGPR(INST_RS(Value)) == (int)INST_IMM(Value));
     AdvancePC();
 }
 
-static inline void TGEI(uint32_t Value)
+__attribute__((__always_inline__)) static inline void TGEI(uint32_t Value)
 {
     TRAPCond((int)ReadGPR(INST_RS(Value)) >= (int)INST_IMM(Value));
     AdvancePC();
 }
 
-static inline void TGEIU(uint32_t Value)
+__attribute__((__always_inline__)) static inline void TGEIU(uint32_t Value)
 {
     TRAPCond((uint32_t)ReadGPR(INST_RS(Value)) >= (uint32_t)INST_IMM(Value));
     AdvancePC();
 }
 
-static inline void TLTI(uint32_t Value)
+__attribute__((__always_inline__)) static inline void TLTI(uint32_t Value)
 {
     TRAPCond((int)ReadGPR(INST_RS(Value)) < (int)INST_IMM(Value));
     AdvancePC();
 }
 
-static inline void TLTIU(uint32_t Value)
+__attribute__((__always_inline__)) static inline void TLTIU(uint32_t Value)
 {
     TRAPCond((uint32_t)ReadGPR(INST_RS(Value)) < (uint32_t)INST_IMM(Value));
     AdvancePC();
 }
 
-static inline void TNEI(uint32_t Value)
+__attribute__((__always_inline__)) static inline void TNEI(uint32_t Value)
 {
     TRAPCond((uint32_t)ReadGPR(INST_RS(Value)) != (int)INST_IMM(Value));
     AdvancePC();
@@ -957,19 +957,19 @@ void REGIMM(uint32_t Value)
     UndefinedInstError(Value);
 }
 
-static inline void DMFC0(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DMFC0(uint32_t Value)
 {
     WriteGPR(ReadCOP0(INST_RD(Value)), INST_RT(Value));
     AdvancePC();
 }
 
-static inline void DMTC0(uint32_t Value)
+__attribute__((__always_inline__)) static inline void DMTC0(uint32_t Value)
 {
     WriteCOP0(ReadGPR(INST_RT(Value)), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void ERET(uint32_t Value)
+__attribute__((__always_inline__)) static inline void ERET(uint32_t Value)
 {
     uint32_t NewPC = (Regs.COP0[COP0_Status].Value & 0b100) > 0 
                     ? (uint32_t)Regs.COP0[COP0_ErrorEPC].Value 
@@ -979,37 +979,37 @@ static inline void ERET(uint32_t Value)
     Regs.LLbit = false;
 }
 
-static inline void MFC0(uint32_t Value)
+__attribute__((__always_inline__)) static inline void MFC0(uint32_t Value)
 {
     WriteGPR((uint32_t)ReadCOP0(INST_RD(Value)), INST_RT(Value));
     AdvancePC();
 }
 
-static inline void MTC0(uint32_t Value)
+__attribute__((__always_inline__)) static inline void MTC0(uint32_t Value)
 {
     WriteCOP0((uint32_t)ReadGPR(INST_RT(Value)), INST_RD(Value));
     AdvancePC();
 }
 
-static inline void TLBP(uint32_t Value)
+__attribute__((__always_inline__)) static inline void TLBP(uint32_t Value)
 {
     ProbeTLB();
     AdvancePC();
 }
 
-static inline void TLBR(uint32_t Value)
+__attribute__((__always_inline__)) static inline void TLBR(uint32_t Value)
 {
     ReadTLBEntry();
     AdvancePC();
 }
 
-static inline void TLBWI(uint32_t Value)
+__attribute__((__always_inline__)) static inline void TLBWI(uint32_t Value)
 {
     WriteTLBEntryIndexed();
     AdvancePC();
 }
 
-static inline void TLBWR(uint32_t Value)
+__attribute__((__always_inline__)) static inline void TLBWR(uint32_t Value)
 {
     WriteTLBEntryRandom();
     AdvancePC();
@@ -1055,7 +1055,7 @@ void COP0(uint32_t Value)
     UndefinedInstError(Value);
 }
 
-static inline void CFC1(uint32_t Value)
+__attribute__((__always_inline__)) static inline void CFC1(uint32_t Value)
 {
     if (INST_RD(Value) == 31 || INST_RD(Value) == 0)
     {
@@ -1068,7 +1068,7 @@ static inline void CFC1(uint32_t Value)
     AdvancePC();
 }
 
-static inline void CTC1(uint32_t Value)
+__attribute__((__always_inline__)) static inline void CTC1(uint32_t Value)
 {
     if (INST_RD(Value) == 31 || INST_RD(Value) == 0)
     {

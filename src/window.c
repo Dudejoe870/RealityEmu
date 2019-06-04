@@ -7,10 +7,13 @@
 
 #include "r4300/mem.h"
 #include "r4300/cpu.h"
+#include "cart.h"
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <byteswap.h>
+#include <string.h>
 
 SDL_Window* window = NULL;
 SDL_GLContext context;
@@ -155,6 +158,19 @@ int WindowRun(void)
 
         glEnd();
     }
+    
+    #ifdef MEASURE_MHZ
+    cartheader_t* Header = GetRealMemoryLoc(0x10000000);
+    char WinName[64];
+    strcpy(WinName, "RealityEmu - ");
+    strcat(WinName, Header->Name);
+    strcat(WinName, " CPU: ");
+    char MHzStr[64];
+    sprintf(MHzStr, "%.2f", (float)CPUMHz);
+    strcat(WinName, MHzStr);
+    strcat(WinName, " MHz");
+    SDL_SetWindowTitle(window, WinName);
+    #endif
 
     SDL_GL_SwapWindow(window);
 

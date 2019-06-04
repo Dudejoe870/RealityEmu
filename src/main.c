@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "r4300/cpu.h"
+#include "r4300/mem.h"
 #include "config.h"
 #include "window.h"
 #include "cart.h"
@@ -50,14 +51,16 @@ int main(int argc, char** argv)
     Config.Region       = REG_NTSC;
 
     CPUInit(ROM, (size_t)len);
-    
-    cartheader_t* Header = ROM;
 
-    char WinName[32];
+    #ifndef MEASURE_MHZ
+    cartheader_t* Header = GetRealMemoryLoc(0x10000000);
+    char WinName[64];
     strcpy(WinName, "RealityEmu - ");
     strcat(WinName, Header->Name);
-
     WindowInit(960, 720, WinName);
+    #else
+    WindowInit(960, 720, " ");
+    #endif
 
     while (IsRunning)
     {
