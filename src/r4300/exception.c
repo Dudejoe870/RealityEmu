@@ -2,7 +2,7 @@
 
 #include "cpu.h"
 #include "interpreter.h"
-#include "config.h"
+#include "../config.h"
 
 #include <stdio.h>
 

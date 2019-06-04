@@ -5,8 +5,8 @@
 
 #include "SDL2/SDL.h"
 
-#include "mem.h"
-#include "cpu.h"
+#include "r4300/mem.h"
+#include "r4300/cpu.h"
 
 #include <stdint.h>
 #include <stdio.h>

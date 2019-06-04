@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "cpu.h"
+#include "r4300/cpu.h"
 #include "config.h"
 #include "window.h"
 #include "cart.h"

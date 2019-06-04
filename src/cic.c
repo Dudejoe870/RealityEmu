@@ -1,6 +1,6 @@
 #include "cic.h"
 
-#include "mem.h"
+#include "r4300/mem.h"
 
 #include <stdio.h>
 

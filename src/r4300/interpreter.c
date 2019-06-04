@@ -9,7 +9,7 @@
 #include "mem.h"
 #include "exception.h"
 #include "mi.h"
-#include "config.h"
+#include "../config.h"
 #include "tlb.h"
 
 #define INST_OP_MSK     0b11111100000000000000000000000000
@@ -47,7 +47,7 @@ uint32_t currTarget = 0;
 
 uint8_t  currInstCycles = 0;
 uint64_t Cycles         = 0;
-__int128 AllCycles      = 0;
+unsigned __int128 AllCycles      = 0;
 uint32_t VICycleCount   = 0;
 
 bool GetIsBranching(void)
@@ -292,12 +292,12 @@ void Step(void)
 {
     bool ShouldBranch = IsBranching;
 
-    uint32_t inst = ReadUInt32((uint32_t)Regs.PC.Value);
-    opcode_t op   = OpcodeTable[INST_OP(inst)];
+    uint32_t Inst = ReadUInt32((uint32_t)Regs.PC.Value);
+    opcode_t Op   = OpcodeTable[INST_OP(Inst)];
 
-    if (op.Interpret == NULL && inst != 0) 
+    if (Op.Interpret == NULL && Inst != 0) 
     {
-        UndefinedInstError(inst);
+        UndefinedInstError(Inst);
         return;
     }
 
@@ -323,7 +323,7 @@ void Step(void)
     }
 
     currInstCycles = 1;
-    if (inst != 0) op.Interpret(inst);
+    if (Inst != 0) Op.Interpret(Inst);
     else AdvancePC();
     Cycles += currInstCycles;
     AllCycles += currInstCycles;

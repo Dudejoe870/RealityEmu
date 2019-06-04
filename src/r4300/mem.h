@@ -31,6 +31,13 @@ uint32_t SP_STATUS_REG_W;
 uint32_t SP_STATUS_REG_R;
 uint32_t SP_PC_REG_RW;
 
+uint32_t DPC_START_REG_RW;
+uint32_t DPC_END_REG_RW;
+uint32_t DPC_CURRENT_REG_R;
+uint32_t DPC_CURRENT_REG_W;
+uint32_t DPC_STATUS_REG_R;
+uint32_t DPC_STATUS_REG_W;
+
 uint32_t MI_INIT_MODE_REG_W;
 uint32_t MI_INIT_MODE_REG_R;
 uint32_t MI_INTR_MASK_REG_W;
@@ -96,4 +103,5 @@ uint64_t ReadUInt64(uint32_t Addr);
 
 void MemoryCopy(uint32_t Dest, uint32_t Source, size_t Length);
 
+void* GetRealMemoryLoc(uint32_t Addr);
 void* GetFramebuffer(void);

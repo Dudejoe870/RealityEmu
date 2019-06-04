@@ -5,10 +5,11 @@
 #include <byteswap.h>
 
 #include "mem.h"
-#include "cic.h"
+#include "../cic.h"
 #include "opcodetable.h"
 #include "interpreter.h"
-#include "config.h"
+#include "../config.h"
+#include "../rdp/rdp.h"
 
 #define MEASURE_MHZ
 
@@ -122,6 +123,8 @@ void CPUInit(void* ROM, size_t ROMSize)
     pthread_t CPUThread;
 
     pthread_create(&CPUThread, NULL, RunCPU, NULL);
+
+    RDPInit();
 }
 
 void CPUDeInit(void)
