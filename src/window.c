@@ -17,9 +17,9 @@
 
 SDL_Window* window = NULL;
 SDL_GLContext context;
-GLuint FramebufferTexture = 0;
+GLuint framebuffer_texture = 0;
 
-int WindowInit(int width, int height, char* title)
+int window_init(int width, int height, char* title)
 {
     SDL_Init(SDL_INIT_EVERYTHING);
 
@@ -49,8 +49,8 @@ int WindowInit(int width, int height, char* title)
 
     glDisable(GL_DEPTH_TEST);
 
-    glGenTextures(1, &FramebufferTexture);
-    glBindTexture(GL_TEXTURE_2D, FramebufferTexture);
+    glGenTextures(1, &framebuffer_texture);
+    glBindTexture(GL_TEXTURE_2D, framebuffer_texture);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -65,63 +65,63 @@ int WindowInit(int width, int height, char* title)
     return 0;
 }
 
-void* GetFramebufferImage(uint32_t* Width, uint32_t* Height, uint8_t* PixelSizeOut)
+void* get_framebuffer_image(uint32_t* width, uint32_t* height, uint8_t* pixel_size_out)
 {
-    uint32_t VIStatus = bswap_32(VI_STATUS_REG_RW);
-    uint32_t PixelSize = VIStatus & 0b11;
-    if (PixelSize == 0) return NULL;
+    uint32_t vi_status = bswap_32(VI_STATUS_REG_RW);
+    uint32_t pixel_size = vi_status & 0b11;
+    if (pixel_size == 0) return NULL;
 
-    uint32_t VIhStart = bswap_32(VI_H_START_REG_RW);
-    uint32_t HorizontalEndOfVideo = VIhStart & 0x3FF;
-    uint32_t HorizontalStartOfVideo = (VIhStart >> 16) & 0x3FF;
-    uint32_t XScale = bswap_32(VI_X_SCALE_REG_RW) & 0xFFF;
+    uint32_t vi_h_start = bswap_32(VI_H_START_REG_RW);
+    uint32_t h_end_of_video = vi_h_start & 0x3FF;
+    uint32_t h_start_of_video = (vi_h_start >> 16) & 0x3FF;
+    uint32_t x_scale = bswap_32(VI_X_SCALE_REG_RW) & 0xFFF;
 
-    uint32_t FramebufferWidth = (HorizontalEndOfVideo - HorizontalStartOfVideo) * (float)XScale / (1 << 10);
+    uint32_t framebuffer_width = (h_end_of_video - h_start_of_video) * (float)x_scale / (1 << 10);
 
-    *Width = FramebufferWidth;
+    *width = framebuffer_width;
 
-    uint32_t VIvStart = bswap_32(VI_V_START_REG_RW);
-    uint32_t VerticalEndOfVideo = VIvStart & 0x3FF;
-    uint32_t VerticalStartOfVideo = (VIvStart >> 16) & 0x3FF;
-    uint32_t YScale = bswap_32(VI_Y_SCALE_REG_RW) & 0xFFF;
+    uint32_t vi_v_start = bswap_32(VI_V_START_REG_RW);
+    uint32_t v_end_of_video = vi_v_start & 0x3FF;
+    uint32_t v_start_of_video = (vi_v_start >> 16) & 0x3FF;
+    uint32_t y_scale = bswap_32(VI_Y_SCALE_REG_RW) & 0xFFF;
 
-    uint32_t FramebufferHeight = ((VerticalEndOfVideo - VerticalStartOfVideo) >> 1) * (float)YScale / (1 << 10);
+    uint32_t framebuffer_height = ((v_end_of_video - v_start_of_video) >> 1) * (float)y_scale / (1 << 10);
 
-    *Height = FramebufferHeight;
+    *height = framebuffer_height;
 
-    void* Framebuffer = GetFramebuffer();
+    void* framebuffer = get_framebuffer();
 
-    uint32_t BytesPerPixel = (PixelSize == 3) ? 4 : 2;
+    uint32_t bytes_per_pixel = (pixel_size == 3) ? 4 : 2;
 
-    uint8_t* FrameCopy = malloc((FramebufferWidth * FramebufferHeight) * BytesPerPixel);
+    uint8_t* frame_copy = malloc((framebuffer_width * framebuffer_height) * bytes_per_pixel);
 
-    uint32_t Pitch = FramebufferWidth * BytesPerPixel;
+    uint32_t pitch = framebuffer_width * bytes_per_pixel;
 
-    uint8_t Interlaced = ((VIStatus & 0b1000000) >> 6) & 1;
+    uint8_t interlaced = ((vi_status & 0b1000000) >> 6) & 1;
 
-    for (size_t y = VerticalStartOfVideo; y < VerticalEndOfVideo; ++y)
+    for (size_t y = v_start_of_video; y < v_end_of_video; ++y)
     {
-        uint32_t Line = (y - VerticalStartOfVideo) >> (~Interlaced & 1);
-        uint32_t Offset = Pitch * Line;
+        uint32_t Line = (y - v_start_of_video) >> (~interlaced & 1);
+        uint32_t offset = pitch * Line;
 
-        if (BytesPerPixel == 4)
-            memcpy(FrameCopy + Offset, ((uint8_t*)Framebuffer) + Offset, Pitch);
+        if (bytes_per_pixel == 4)
+            memcpy(frame_copy + offset, ((uint8_t*)framebuffer) + offset, pitch);
         else
         {
-            for (size_t End = Offset + Pitch; Offset < End; Offset += 2)
+            for (size_t End = offset + pitch; offset < End; offset += 2)
             {
-                FrameCopy[Offset]     = ((uint8_t*)Framebuffer)[Offset + 1];
-                FrameCopy[Offset + 1] = ((uint8_t*)Framebuffer)[Offset];
+                frame_copy[offset]     = ((uint8_t*)framebuffer)[offset + 1];
+                frame_copy[offset + 1] = ((uint8_t*)framebuffer)[offset];
             }
         }
     }
 
-    *PixelSizeOut = PixelSize;
+    *pixel_size_out = pixel_size;
 
-    return FrameCopy;
+    return frame_copy;
 }
 
-int WindowRun(void)
+int window_run(void)
 {
     SDL_Event e;
     if (SDL_PollEvent(&e))
@@ -135,19 +135,19 @@ int WindowRun(void)
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    uint8_t PixelSize = 0;
-    uint32_t FramebufferWidth  = 0;
-    uint32_t FramebufferHeight = 0;
-    void* Frame = NULL;
-    Frame = GetFramebufferImage(&FramebufferWidth, &FramebufferHeight, &PixelSize);
+    uint8_t pixel_size = 0;
+    uint32_t framebuffer_width  = 0;
+    uint32_t framebuffer_height = 0;
+    void* frame = NULL;
+    frame = get_framebuffer_image(&framebuffer_width, &framebuffer_height, &pixel_size);
 
-    if (Frame != NULL)
+    if (frame != NULL)
     {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, FramebufferWidth, FramebufferHeight, 0, GL_RGBA, 
-                    (PixelSize == 3) ? GL_UNSIGNED_BYTE : GL_UNSIGNED_SHORT_5_5_5_1, 
-                    Frame);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, framebuffer_width, framebuffer_height, 0, GL_RGBA, 
+                    (pixel_size == 3) ? GL_UNSIGNED_BYTE : GL_UNSIGNED_SHORT_5_5_5_1, 
+                    frame);
 
-        free(Frame);
+        free(frame);
 
         glBegin(GL_QUADS);
 
@@ -159,27 +159,25 @@ int WindowRun(void)
         glEnd();
     }
     
-    #ifdef MEASURE_MHZ
-    cartheader_t* Header = GetRealMemoryLoc(0x10000000);
-    char WinName[64];
-    strcpy(WinName, "RealityEmu - ");
-    strcat(WinName, Header->Name);
-    strcat(WinName, " CPU: ");
-    char MHzStr[64];
-    sprintf(MHzStr, "%.2f", (float)CPUMHz);
-    strcat(WinName, MHzStr);
-    strcat(WinName, " MHz");
-    SDL_SetWindowTitle(window, WinName);
-    #endif
+    cartheader_t* header = get_real_memory_loc(0x10000000);
+    char win_name[64];
+    strcpy(win_name, "RealityEmu - ");
+    strcat(win_name, header->name);
+    strcat(win_name, " CPU: ");
+    char mhz_str[64];
+    sprintf(mhz_str, "%.2f", (float)CPU_mhz);
+    strcat(win_name, mhz_str);
+    strcat(win_name, " MHz");
+    SDL_SetWindowTitle(window, win_name);
 
     SDL_GL_SwapWindow(window);
 
     return 0;
 }
 
-void WindowDeInit(void)
+void window_cleanup(void)
 {
-    glDeleteTextures(1, &FramebufferTexture);
+    glDeleteTextures(1, &framebuffer_texture);
     SDL_DestroyWindow(window);
 
     SDL_Quit();

@@ -12,7 +12,7 @@ CC = gcc
 all: $(TARGET) clean
 
 $(TARGET): $(COBJFILES)
-	$(CC) -o $(TARGET) $(COBJFILES) -lSDL2 -lGL -lGLEW -lm -lpthread
+	$(CC) -o $(TARGET) $(COBJFILES) -lSDL2 -lGL -lGLEW -lm -lpthread -O3
 clean:
 	rm $(COBJFILES)
 

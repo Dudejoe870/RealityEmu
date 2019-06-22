@@ -2,14 +2,14 @@
 
 #include <stdint.h>
 
-void RDPStep(void);
+void RDP_step(void);
 
-void SetColorImage(uint64_t Value);
-void FillRectangle(uint64_t Value);
-void SetOtherModes(uint64_t Value);
-void SetFillColor (uint64_t Value);
-void SetScissor   (uint64_t Value);
-void SyncFull     (uint64_t Value);
-void SyncPipe     (uint64_t Value);
+void cmd_SetColorImage(uint64_t value);
+void cmd_FillRectangle(uint64_t value);
+void cmd_SetOtherModes(uint64_t value);
+void cmd_SetFillColor (uint64_t value);
+void cmd_SetScissor   (uint64_t value);
+void cmd_SyncFull     (uint64_t value);
+void cmd_SyncPipe     (uint64_t value);
 
-void Triangle(uint64_t Value);
+void cmd_Triangle(uint64_t value);

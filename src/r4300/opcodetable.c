@@ -1,60 +1,60 @@
 #include "opcodetable.h"
 #include "interpreter.h"
 
-void OpcodeTableInit(void)
+void opcode_table_init(void)
 {
-    OpcodeTable[0b000000].Interpret = &SPECIAL;
-    OpcodeTable[0b000001].Interpret = &REGIMM;
-    OpcodeTable[0b010000].Interpret = &COP0;
-    OpcodeTable[0b010001].Interpret = &COP1;
+    opcode_table[0b000000].interpret = &SPECIAL;
+    opcode_table[0b000001].interpret = &REGIMM;
+    opcode_table[0b010000].interpret = &COP0;
+    opcode_table[0b010001].interpret = &COP1;
     
-    OpcodeTable[0b001000].Interpret = &ADDI;
-    OpcodeTable[0b001001].Interpret = &ADDIU;
-	OpcodeTable[0b011000].Interpret = &DADDI;
-	OpcodeTable[0b011001].Interpret = &DADDIU;
-    OpcodeTable[0b001100].Interpret = &ANDI;
-	OpcodeTable[0b001101].Interpret = &ORI;
-	OpcodeTable[0b001110].Interpret = &XORI;
+    opcode_table[0b001000].interpret = &ADDI;
+    opcode_table[0b001001].interpret = &ADDIU;
+	opcode_table[0b011000].interpret = &DADDI;
+	opcode_table[0b011001].interpret = &DADDIU;
+    opcode_table[0b001100].interpret = &ANDI;
+	opcode_table[0b001101].interpret = &ORI;
+	opcode_table[0b001110].interpret = &XORI;
 
-    OpcodeTable[0b100000].Interpret = &LB;
-    OpcodeTable[0b100100].Interpret = &LBU;
-    OpcodeTable[0b110111].Interpret = &LD;
-    OpcodeTable[0b011010].Interpret = &LDL;
-    OpcodeTable[0b011011].Interpret = &LDR;
-    OpcodeTable[0b100001].Interpret = &LH;
-    OpcodeTable[0b100101].Interpret = &LHU;
-    OpcodeTable[0b110000].Interpret = &LL;
-    OpcodeTable[0b110100].Interpret = &LLD;
-    OpcodeTable[0b001111].Interpret = &LUI;
-    OpcodeTable[0b100011].Interpret = &LW;
-    OpcodeTable[0b100010].Interpret = &LWL;
-    OpcodeTable[0b100110].Interpret = &LWR;
-    OpcodeTable[0b100111].Interpret = &LWU;
+    opcode_table[0b100000].interpret = &LB;
+    opcode_table[0b100100].interpret = &LBU;
+    opcode_table[0b110111].interpret = &LD;
+    opcode_table[0b011010].interpret = &LDL;
+    opcode_table[0b011011].interpret = &LDR;
+    opcode_table[0b100001].interpret = &LH;
+    opcode_table[0b100101].interpret = &LHU;
+    opcode_table[0b110000].interpret = &LL;
+    opcode_table[0b110100].interpret = &LLD;
+    opcode_table[0b001111].interpret = &LUI;
+    opcode_table[0b100011].interpret = &LW;
+    opcode_table[0b100010].interpret = &LWL;
+    opcode_table[0b100110].interpret = &LWR;
+    opcode_table[0b100111].interpret = &LWU;
 
-    OpcodeTable[0b101000].Interpret = &SB;
-    OpcodeTable[0b111000].Interpret = &SC;
-    OpcodeTable[0b111100].Interpret = &SCD;
-    OpcodeTable[0b111111].Interpret = &SD;
-    OpcodeTable[0b101100].Interpret = &SDL;
-    OpcodeTable[0b101101].Interpret = &SDR;
-    OpcodeTable[0b101001].Interpret = &SH;
-    OpcodeTable[0b001010].Interpret = &SLTI;
-    OpcodeTable[0b001011].Interpret = &SLTIU;
-    OpcodeTable[0b101011].Interpret = &SW;
-    OpcodeTable[0b101010].Interpret = &SWL;
-    OpcodeTable[0b101110].Interpret = &SWR;
+    opcode_table[0b101000].interpret = &SB;
+    opcode_table[0b111000].interpret = &SC;
+    opcode_table[0b111100].interpret = &SCD;
+    opcode_table[0b111111].interpret = &SD;
+    opcode_table[0b101100].interpret = &SDL;
+    opcode_table[0b101101].interpret = &SDR;
+    opcode_table[0b101001].interpret = &SH;
+    opcode_table[0b001010].interpret = &SLTI;
+    opcode_table[0b001011].interpret = &SLTIU;
+    opcode_table[0b101011].interpret = &SW;
+    opcode_table[0b101010].interpret = &SWL;
+    opcode_table[0b101110].interpret = &SWR;
 
-    OpcodeTable[0b000100].Interpret = &BEQ;
-    OpcodeTable[0b010100].Interpret = &BEQL;
-    OpcodeTable[0b000111].Interpret = &BGTZ;
-    OpcodeTable[0b010111].Interpret = &BGTZL;
-    OpcodeTable[0b000110].Interpret = &BLEZ;
-    OpcodeTable[0b010110].Interpret = &BLEZL;
-    OpcodeTable[0b000101].Interpret = &BNE;
-    OpcodeTable[0b010101].Interpret = &BNEL;
+    opcode_table[0b000100].interpret = &BEQ;
+    opcode_table[0b010100].interpret = &BEQL;
+    opcode_table[0b000111].interpret = &BGTZ;
+    opcode_table[0b010111].interpret = &BGTZL;
+    opcode_table[0b000110].interpret = &BLEZ;
+    opcode_table[0b010110].interpret = &BLEZL;
+    opcode_table[0b000101].interpret = &BNE;
+    opcode_table[0b010101].interpret = &BNEL;
 
-    OpcodeTable[0b000010].Interpret = &J;
-    OpcodeTable[0b000011].Interpret = &JAL;
+    opcode_table[0b000010].interpret = &J;
+    opcode_table[0b000011].interpret = &JAL;
 
-    OpcodeTable[0b101111].Interpret = &CACHE;
+    opcode_table[0b101111].interpret = &CACHE;
 }

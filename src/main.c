@@ -8,6 +8,9 @@
 #include "window.h"
 #include "cart.h"
 
+#define WINDOW_WIDTH  960
+#define WINDOW_HEIGHT 720
+
 void ReadFileIntoArray(void** buffer, long* len, char* file)
 {
     FILE* file_ptr = fopen(file, "rb");
@@ -46,31 +49,24 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    Config.ExpansionPak = true;
-    Config.DebugLogging = true;
-    Config.Region       = REG_NTSC;
+    config.expansion_pak = true;
+    config.debug_logging = true;
+    config.region       = REG_NTSC;
+    config.refresh_rate  = (config.region == REG_NTSC || config.region == REG_MPAL) ? 60 : 50;
 
-    CPUInit(ROM, (size_t)len);
+    CPU_init(ROM, (size_t)len);
 
-    #ifndef MEASURE_MHZ
-    cartheader_t* Header = GetRealMemoryLoc(0x10000000);
-    char WinName[64];
-    strcpy(WinName, "RealityEmu - ");
-    strcat(WinName, Header->Name);
-    WindowInit(960, 720, WinName);
-    #else
-    WindowInit(960, 720, " ");
-    #endif
+    window_init(WINDOW_WIDTH, WINDOW_HEIGHT, " ");
 
-    while (IsRunning)
+    while (is_running)
     {
-        if (WindowRun() != 0)
-            IsRunning = false;
+        if (window_run() != 0)
+            is_running = false;
     }
 
-    WindowDeInit();
+    window_cleanup();
 
-    CPUDeInit();
+    CPU_cleanup();
 
     return 0;
 }

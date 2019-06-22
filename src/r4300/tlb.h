@@ -6,28 +6,28 @@
 typedef struct
 {
     uint32_t PFN0;
-    uint8_t  PageCoherency0;
-    uint8_t  Dirty0;
-    uint8_t  Valid0;
-    uint8_t  Global0;
+    uint8_t  page_coherency0;
+    uint8_t  dirty0;
+    uint8_t  valid0;
+    uint8_t  global0;
     uint32_t PFN1;
-    uint8_t  PageCoherency1;
-    uint8_t  Dirty1;
-    uint8_t  Valid1;
-    uint8_t  Global1;
-    uint32_t EntryHi;
-    uint32_t PageMask;
+    uint8_t  page_coherency1;
+    uint8_t  dirty1;
+    uint8_t  valid1;
+    uint8_t  global1;
+    uint32_t entry_hi;
+    uint32_t page_mask;
 
-    bool Written;
+    bool written;
 } tlbentry_t;
 
-tlbentry_t TLBEntries[32];
+tlbentry_t TLB_entries[32];
 
-uint32_t TLBTranslateAddress(uint32_t Addr);
+uint32_t TLB_translate_address(uint32_t addr);
 
-void WriteTLBEntryIndexed(void);
-void WriteTLBEntryRandom (void);
+void write_TLB_entry_indexed(void);
+void write_TLB_entry_random (void);
 
-void ReadTLBEntry(void);
+void read_TLB_entry(void);
 
-void ProbeTLB(void);
+void probe_TLB(void);

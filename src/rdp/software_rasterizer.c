@@ -9,53 +9,53 @@
 
 #define SCANBUFFER_HEIGHT 480
 
-static inline float GetFloatValueFromFrmt(uint32_t Int, uint32_t Dec, float DecMax)
+__attribute__((__always_inline__)) static inline float get_float_value_from_frmt(uint32_t integer, uint32_t decimal, float decimal_max)
 {
-    return ((int)Int) + ((float)Dec / DecMax);
+    return ((int)integer) + ((float)decimal / decimal_max);
 }
 
-static inline float GetTenPointTwo(uint16_t Value)
+__attribute__((__always_inline__)) static inline float get_ten_point_two(uint16_t value)
 {
-    return GetFloatValueFromFrmt(Value >> 2, Value & 0x3, 3.0f);
+    return get_float_value_from_frmt(value >> 2, value & 0x3, 3.0f);
 }
 
-static inline float GetTenPointFive(uint16_t Value)
+__attribute__((__always_inline__)) static inline float get_ten_point_five(uint16_t value)
 {
-    return GetFloatValueFromFrmt(Value >> 5, Value & 0x1F, 31.0f);
+    return get_float_value_from_frmt(value >> 5, value & 0x1F, 31.0f);
 }
 
-static inline float GetFivePointTen(uint16_t Value)
+__attribute__((__always_inline__)) static inline float get_five_point_ten(uint16_t value)
 {
-    return GetFloatValueFromFrmt(Value >> 10, Value & 0x3FF, 1024.0f);
+    return get_float_value_from_frmt(value >> 10, value & 0x3FF, 1024.0f);
 }
 
-static inline void SetPixel(uint32_t x, uint32_t y, uint32_t PackedColor, uint32_t SX1, uint32_t SY1, uint32_t SX2, uint32_t SY2)
+__attribute__((__always_inline__)) static inline void set_pixel(uint32_t x, uint32_t y, uint32_t packed_color, uint32_t SX1, uint32_t SY1, uint32_t SX2, uint32_t SY2)
 {
     if ((x < SX1 || y < SY1) || (x > SX2 || y > SY2)) return;
 
-    uint32_t Index = x + y * (currColorImage.ImageWidth+1);
-    if (currColorImage.ImageSize == BPP_16)
-        Index >>= 1;
-    uint32_t* Framebuffer = GetRealMemoryLoc(currColorImage.ImageAddr);
-    Framebuffer[Index] = bswap_32(PackedColor);
+    uint32_t index = x + y * (curr_colorimage.image_width+1);
+    if (curr_colorimage.image_size == BPP_16)
+        index >>= 1;
+    uint32_t* framebuffer = get_real_memory_loc(curr_colorimage.image_addr);
+    framebuffer[index] = bswap_32(packed_color);
 }
 
-void DrawFillScanbuffer(uint32_t* Scanbuffer)
+void draw_fill_scanbuffer(uint32_t* scanbuffer)
 {
-    uint32_t ScreenX1 = (uint32_t)(ScissorBorder.Border.XH >> 2);
-    uint32_t ScreenY1 = (uint32_t)(ScissorBorder.Border.YH >> 2);
-    uint32_t ScreenX2 = (uint32_t)(ScissorBorder.Border.XL >> 2);
-    uint32_t ScreenY2 = (uint32_t)(ScissorBorder.Border.YL >> 2);
+    uint32_t screen_x1 = (uint32_t)(scissor_border.border.XH >> 2);
+    uint32_t screen_y1 = (uint32_t)(scissor_border.border.YH >> 2);
+    uint32_t screen_x2 = (uint32_t)(scissor_border.border.XL >> 2);
+    uint32_t screen_y2 = (uint32_t)(scissor_border.border.YL >> 2);
 
-    if (currColorImage.ImageFormat == Frmt_RGBA)
+    if (curr_colorimage.image_format == FRMT_RGBA)
     {
-        for (size_t y = ScreenY1; y < ScreenY2; ++y)
+        for (size_t y = screen_y1; y < screen_y2; ++y)
         {
-            uint32_t xMin = Scanbuffer[(y * 2)    ];
-            uint32_t xMax = Scanbuffer[(y * 2) + 1];
+            uint32_t xmin = scanbuffer[(y * 2)    ];
+            uint32_t xmax = scanbuffer[(y * 2) + 1];
             
-            for (size_t x = xMin; x < xMax; ++x)
-                SetPixel(x, y, FillColor, ScreenX1, ScreenY1, ScreenX2, ScreenY2);
+            for (size_t x = xmin; x < xmax; ++x)
+                set_pixel(x, y, fill_color, screen_x1, screen_y1, screen_x2, screen_y2);
         }
     }
     else
@@ -64,57 +64,55 @@ void DrawFillScanbuffer(uint32_t* Scanbuffer)
     }
 }
 
-void ScanConvertLine(uint32_t* Scanbuffer, float XStep, uint32_t XStart, uint32_t YStart, uint32_t YEnd, int Side)
+void scan_convert_line(uint32_t* scanbuffer, float xstep, uint32_t xstart, uint32_t ystart, uint32_t yend, int side)
 {
-    float CurrX = XStart;
+    float currx = xstart;
 
-    for (uint32_t y = YStart; y < YEnd; ++y)
+    for (uint32_t y = ystart; y < yend; ++y)
     {
-        size_t Index = (y * 2) + Side;
-        if (Index > SCANBUFFER_HEIGHT * 2) break;
-        Scanbuffer[Index] = (uint32_t)CurrX;
-        CurrX += XStep;
+        size_t index = (y * 2) + side;
+        if (index > SCANBUFFER_HEIGHT * 2) break;
+        scanbuffer[index] = (uint32_t)currx;
+        currx += xstep;
     }
 }
 
-void ScanConvertTriangle(uint32_t* Scanbuffer, edgecoeff_t* Edges)
+void scan_convert_triangle(uint32_t* scanbuffer, edgecoeff_t* edges)
 {
-    float XStep1 = GetFloatValueFromFrmt((short)Edges->DxHDy, Edges->DxHDyFrac, 65535.0f);
-    float XStep2 = GetFloatValueFromFrmt((short)Edges->DxLDy, Edges->DxLDyFrac, 65535.0f);
-    float XStep3 = GetFloatValueFromFrmt((short)Edges->DxMDy, Edges->DxMDyFrac, 65535.0f);
+    float xstep1 = get_float_value_from_frmt((short)edges->DxHDy, edges->DxHDy_frac, 65535.0f);
+    float xstep2 = get_float_value_from_frmt((short)edges->DxLDy, edges->DxLDy_frac, 65535.0f);
+    float xstep3 = get_float_value_from_frmt((short)edges->DxMDy, edges->DxMDy_frac, 65535.0f);
 
-    int Dir = (int)Edges->lft;
-
-    ScanConvertLine(Scanbuffer, XStep1, Edges->XH, Edges->YH >> 2, Edges->YL >> 2, (int)(1 - Dir));
-    ScanConvertLine(Scanbuffer, XStep2, Edges->XL, Edges->YM >> 2, Edges->YL >> 2, Dir);
-    ScanConvertLine(Scanbuffer, XStep3, Edges->XM, Edges->YH >> 2, Edges->YM >> 2, Dir);
+    scan_convert_line(scanbuffer, xstep1, edges->XH, edges->YH >> 2, edges->YL >> 2, (int)(1 - edges->lft));
+    scan_convert_line(scanbuffer, xstep2, edges->XL, edges->YM >> 2, edges->YL >> 2, edges->lft);
+    scan_convert_line(scanbuffer, xstep3, edges->XM, edges->YH >> 2, edges->YM >> 2, edges->lft);
 }
 
-void DrawTriangle(edgecoeff_t* Edges, shadecoeff_t* Shade, texcoeff_t* Texture, zbuffercoeff_t* ZBuf)
+void draw_triangle(edgecoeff_t* edges, shadecoeff_t* shade, texcoeff_t* texture, zbuffercoeff_t* zbuf)
 {
-    uint32_t TriScanbuffer[SCANBUFFER_HEIGHT * 2];
-    memset(TriScanbuffer, 0, (SCANBUFFER_HEIGHT * 2) * sizeof(uint32_t));
+    uint32_t tri_scanbuffer[SCANBUFFER_HEIGHT * 2];
+    memset(tri_scanbuffer, 0, (SCANBUFFER_HEIGHT * 2) * sizeof(uint32_t));
 
-    ScanConvertTriangle(TriScanbuffer, Edges);
+    scan_convert_triangle(tri_scanbuffer, edges);
 
-    DrawFillScanbuffer(TriScanbuffer);
+    draw_fill_scanbuffer(tri_scanbuffer);
 }
 
-void FillRect(rect_t* Rect)
+void fill_rect(rect_t* rect)
 {
-    uint32_t RectX1 = (uint32_t)(Rect->XH >> 2);
-    uint32_t RectY1 = (uint32_t)(Rect->YH >> 2);
-    uint32_t RectX2 = (uint32_t)(Rect->XL >> 2) + 1;
-    uint32_t RectY2 = (uint32_t)(Rect->YL >> 2) + 1;
+    uint32_t rect_x1 = (uint32_t)(rect->XH >> 2);
+    uint32_t rect_y1 = (uint32_t)(rect->YH >> 2);
+    uint32_t rect_x2 = (uint32_t)(rect->XL >> 2) + 1;
+    uint32_t rect_y2 = (uint32_t)(rect->YL >> 2) + 1;
 
-    uint32_t RectScanbuffer[SCANBUFFER_HEIGHT * 2];
-    memset(RectScanbuffer, 0, (SCANBUFFER_HEIGHT * 2) * sizeof(uint32_t));
+    uint32_t rect_scanbuffer[SCANBUFFER_HEIGHT * 2];
+    memset(rect_scanbuffer, 0, (SCANBUFFER_HEIGHT * 2) * sizeof(uint32_t));
 
-    for (uint32_t y = RectY1; y < RectY2; ++y)
+    for (uint32_t y = rect_y1; y < rect_y2; ++y)
     {
-        RectScanbuffer[(y * 2)    ] = RectX1;
-        RectScanbuffer[(y * 2) + 1] = RectX2;
+        rect_scanbuffer[(y * 2)    ] = rect_x1;
+        rect_scanbuffer[(y * 2) + 1] = rect_x2;
     }
 
-    DrawFillScanbuffer(RectScanbuffer);
+    draw_fill_scanbuffer(rect_scanbuffer);
 }

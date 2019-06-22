@@ -1,6 +1,7 @@
 #include "cpu.h"
 
 #include <pthread.h>
+#include <sched.h>
 #include <stdio.h>
 #include <byteswap.h>
 
@@ -11,116 +12,116 @@
 #include "../config.h"
 #include "../rdp/rdp.h"
 
-#ifdef MEASURE_MHZ
 #include <time.h>
-#endif
 
-#ifdef MEASURE_MHZ
-void* MeasureMHz(void* vargp)
+void* measure_mhz(void* vargp)
 {
-    uint32_t Count = 0;
-    while (IsRunning)
+    uint32_t count = 0;
+    while (is_running)
     {
-        if (Count >= 10000)
+        if (count >= 10000)
         {
-            float TimeSeconds = ((float)clock()) / CLOCKS_PER_SEC;
+            float time_seconds = ((float)clock()) / CLOCKS_PER_SEC;
 
-            CPUMHz = ((long)GetAllCycles() / 1000000) / TimeSeconds;
-            Count = 0;
+            CPU_mhz = (get_all_cycles() / 1000000) / time_seconds;
+            count = 0;
         }
-        ++Count;
+        ++count;
     }
     return NULL;
 }
-#endif
 
-void* RunCPU(void* vargp)
+void* CPU_run(void* vargp)
 {
-    #ifdef MEASURE_MHZ
-    pthread_t MeasureThread;
+    pthread_t measure_thread;
 
-    pthread_create(&MeasureThread, NULL, MeasureMHz, NULL);
-    #endif
-    while (IsRunning)
+    pthread_create(&measure_thread, NULL, measure_mhz, NULL);
+    while (is_running)
     {
-        Step();
+        step();
     }
     return NULL;
 }
 
 void COP0_WIRED_REG_WRITE_EVENT(void)
 {
-    Regs.COP0[COP0_Random].Value = 0x1F;
+    regs.COP0[COP0_RANDOM].value = 0x1F;
 }
 
-void CPUInit(void* ROM, size_t ROMSize)
+void CPU_init(void* ROM, size_t ROM_size)
 {
-    MemoryInit(ROM, ROMSize);
+    memory_init(ROM, ROM_size);
 
-    uint32_t RomType   = 0;
-    uint32_t ResetType = 0;
-    uint32_t osVersion = 0;
-    uint32_t TVType = (uint32_t)Config.Region;
+    uint32_t rom_type   = 0;
+    uint32_t reset_type = 0;
+    uint32_t os_version = 0;
+    uint32_t tv_type = (uint32_t)config.region;
 
-    Regs.GPR[1].Value  = 0x0000000000000001;
-    Regs.GPR[2].Value  = 0x000000000EBDA536;
-    Regs.GPR[3].Value  = 0x000000000EBDA536;
-    Regs.GPR[4].Value  = 0x000000000000A536;
-    Regs.GPR[5].Value  = 0xFFFFFFFFC0F1D859;
-    Regs.GPR[6].Value  = 0xFFFFFFFFA4001F0C;
-    Regs.GPR[7].Value  = 0xFFFFFFFFA4001F08;
-    Regs.GPR[8].Value  = 0x00000000000000C0;
-    Regs.GPR[10].Value = 0x0000000000000040;
-    Regs.GPR[11].Value = 0xFFFFFFFFA4000040;
-    Regs.GPR[12].Value = 0xFFFFFFFFED10D0B3;
-    Regs.GPR[13].Value = 0x000000001402A4CC;
-    Regs.GPR[14].Value = 0x000000002DE108EA;
-    Regs.GPR[15].Value = 0x000000003103E121;
-    Regs.GPR[19].Value = RomType;
-    Regs.GPR[20].Value = TVType;
-    Regs.GPR[21].Value = ResetType;
-    Regs.GPR[22].Value = (GetCICSeed() >> 8) & 0xFF;
-    Regs.GPR[23].Value = osVersion;
-    Regs.GPR[25].Value = 0xFFFFFFFF9DEBB54F;
-    Regs.GPR[29].Value = 0xFFFFFFFFA4001FF0;
-    Regs.GPR[31].Value = 0xFFFFFFFFA4001550;
-    Regs.HI.Value      = 0x000000003FC18657;
-    Regs.LO.Value      = 0x000000003103E121;
-    Regs.PC.Value      = 0xA4000040;
+    regs.GPR[1].value  = 0x0000000000000001;
+    regs.GPR[2].value  = 0x000000000EBDA536;
+    regs.GPR[3].value  = 0x000000000EBDA536;
+    regs.GPR[4].value  = 0x000000000000A536;
+    regs.GPR[5].value  = 0xFFFFFFFFC0F1D859;
+    regs.GPR[6].value  = 0xFFFFFFFFA4001F0C;
+    regs.GPR[7].value  = 0xFFFFFFFFA4001F08;
+    regs.GPR[8].value  = 0x00000000000000C0;
+    regs.GPR[10].value = 0x0000000000000040;
+    regs.GPR[11].value = 0xFFFFFFFFA4000040;
+    regs.GPR[12].value = 0xFFFFFFFFED10D0B3;
+    regs.GPR[13].value = 0x000000001402A4CC;
+    regs.GPR[14].value = 0x000000002DE108EA;
+    regs.GPR[15].value = 0x000000003103E121;
+    regs.GPR[19].value = rom_type;
+    regs.GPR[20].value = tv_type;
+    regs.GPR[21].value = reset_type;
+    regs.GPR[22].value = (get_CIC_seed() >> 8) & 0xFF;
+    regs.GPR[23].value = os_version;
+    regs.GPR[25].value = 0xFFFFFFFF9DEBB54F;
+    regs.GPR[29].value = 0xFFFFFFFFA4001FF0;
+    regs.GPR[31].value = 0xFFFFFFFFA4001550;
+    regs.HI.value      = 0x000000003FC18657;
+    regs.LO.value      = 0x000000003103E121;
+    regs.PC.value      = 0xA4000040;
 
-    Regs.COP0[COP0_Wired].WriteCallback = COP0_WIRED_REG_WRITE_EVENT;
+    regs.COP0[COP0_WIRED].write_callback = COP0_WIRED_REG_WRITE_EVENT;
 
-    MemoryCopy(0xA4000040, 0x10000040, 0xFC0);
+    memory_memcpy(0xA4000040, 0x10000040, 0xFC0);
 
-    Regs.COP0[COP0_Compare].Value = 0xFFFFFFFF;
-    Regs.COP0[COP0_Status].Value  = 0x34000000;
-    Regs.COP0[COP0_Config].Value  = 0x0006E463;
-    Regs.COP0[COP0_Random].Value  = 0x1F;
+    regs.COP0[COP0_COMPARE].value = 0xFFFFFFFF;
+    regs.COP0[COP0_STATUS].value  = 0x34000000;
+    regs.COP0[COP0_CONFIG].value  = 0x0006E463;
+    regs.COP0[COP0_RANDOM].value  = 0x1F;
 
     RI_SELECT_REG_RW = bswap_32(0b1110);
     VI_INTR_REG_RW   = bswap_32(1023);
     VI_H_SYNC_REG_RW = bswap_32(0xD1);
     VI_V_SYNC_REG_RW = bswap_32(0xD2047);
 
-    uint32_t BSD_DOM1_CONFIG = ReadUInt32(0x10000000);
+    uint32_t BSD_DOM1_CONFIG = read_uint32(0x10000000);
 
     PI_BSD_DOM1_LAT_REG_RW = bswap_32((BSD_DOM1_CONFIG      ) & 0xFF);
     PI_BSD_DOM1_PWD_REG_RW = bswap_32((BSD_DOM1_CONFIG >> 8 ) & 0xFF);
     PI_BSD_DOM1_PGS_REG_RW = bswap_32((BSD_DOM1_CONFIG >> 16) & 0xFF);
     PI_BSD_DOM1_RLS_REG_RW = bswap_32((BSD_DOM1_CONFIG >> 20) & 0x03);
 
-    OpcodeTableInit();
+    opcode_table_init();
 
-    IsRunning = true;
+    is_running = true;
 
-    pthread_t CPUThread;
+    pthread_t CPU_thread;
 
-    pthread_create(&CPUThread, NULL, RunCPU, NULL);
+    pthread_create(&CPU_thread, NULL, CPU_run, NULL);
 
-    RDPInit();
+    struct sched_param params;
+
+    params.sched_priority = sched_get_priority_max(SCHED_FIFO);
+
+    pthread_setschedparam(CPU_thread, SCHED_FIFO, &params); // Hopefully we can prioritize this thread.
+
+    RDP_init();
 }
 
-void CPUDeInit(void)
+void CPU_cleanup(void)
 {
-    MemoryDeInit();
+    memory_cleanup();
 }

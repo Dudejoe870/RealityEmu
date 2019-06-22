@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef enum
 {
@@ -11,9 +12,10 @@ typedef enum
 
 typedef struct
 {
-    bool ExpansionPak;
-    bool DebugLogging;
-    region_t Region;
+    bool     expansion_pak;
+    bool     debug_logging;
+    region_t region;
+    uint8_t  refresh_rate;
 } config_t;
 
-config_t Config;
+config_t config;

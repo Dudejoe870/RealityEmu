@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-void InvokeTLBMiss(uint32_t Addr, bool Store);
-void InvokeBreak  (void);
-void InvokeTrap   (void);
+void invoke_TLB_miss(uint32_t addr, bool store);
+void invoke_break  (void);
+void invoke_trap   (void);
 
-void PollInt(void);
+void poll_int(void);

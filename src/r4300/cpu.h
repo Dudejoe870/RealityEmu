@@ -6,37 +6,37 @@
 
 typedef struct
 {
-    uint64_t Value;
+    uint64_t value;
 
-    void (*WriteCallback)(void);
-    void (*ReadCallback)(void);
+    void (*write_callback)(void);
+    void (*read_callback)(void);
 } reg_t;
 
-#define COP0_Index       0
-#define COP0_Random      1
-#define COP0_EntryLo0    2
-#define COP0_EntryLo1    3
-#define COP0_Context     4
-#define COP0_PageMask    5
-#define COP0_Wired       6
-#define COP0_BadVAddr    8
-#define COP0_Count       9
-#define COP0_EntryHi     10
-#define COP0_Compare     11
-#define COP0_Status      12
-#define COP0_Cause       13
+#define COP0_INDEX       0
+#define COP0_RANDOM      1
+#define COP0_ENTRYLO0    2
+#define COP0_ENTRYLO1    3
+#define COP0_CONTEXT     4
+#define COP0_PAGEMASK    5
+#define COP0_WIRED       6
+#define COP0_BADVADDR    8
+#define COP0_COUNT       9
+#define COP0_ENTRYHI     10
+#define COP0_COMPARE     11
+#define COP0_STATUS      12
+#define COP0_CAUSE       13
 #define COP0_EPC         14
-#define COP0_PRId        15
-#define COP0_Config      16
-#define COP0_LLAddr      17
-#define COP0_WatchLo     18
-#define COP0_WatchHi     19
-#define COP0_XContext    20
-#define COP0_ParityError 26
-#define COP0_CacheError  27
-#define COP0_TagLo       28
-#define COP0_TagHi       29
-#define COP0_ErrorEPC    30
+#define COP0_PRID        15
+#define COP0_CONFIG      16
+#define COP0_LLADDR      17
+#define COP0_WATCHLO     18
+#define COP0_WATCHHI     19
+#define COP0_XCONTEXT    20
+#define COP0_PARITYERROR 26
+#define COP0_CACHEERROR  27
+#define COP0_TAGLO       28
+#define COP0_TAGHI       29
+#define COP0_ERROREPC    30
 
 typedef struct
 {
@@ -49,92 +49,99 @@ typedef struct
     bool LLbit;
 } regs_t;
 
-regs_t Regs;
+regs_t regs;
 
-bool IsRunning;
+bool is_running;
 
-#define MEASURE_MHZ
-#ifdef MEASURE_MHZ
-double CPUMHz;
-#endif
+double CPU_mhz;
 
-void CPUInit(void* ROM, size_t ROMSize);
+void CPU_init(void* ROM, size_t ROM_size);
 
-void CPUDeInit(void);
+void CPU_cleanup(void);
 
-static inline void WriteGPR(uint64_t Value, uint8_t Index)
+__attribute__((__always_inline__)) static inline void write_GPR(uint64_t value, uint8_t index)
 {
-    Regs.GPR[Index].Value = Value;
-    if (Regs.GPR[Index].WriteCallback) Regs.GPR[Index].WriteCallback();
+    regs.GPR[index].value = value;
+    if (regs.GPR[index].write_callback) regs.GPR[index].write_callback();
 }
 
-static inline uint64_t ReadGPR(uint8_t Index)
+__attribute__((__always_inline__)) static inline uint64_t read_GPR(uint8_t index)
 {
-    if (Regs.GPR[Index].ReadCallback) Regs.GPR[Index].ReadCallback();
-    return Regs.GPR[Index].Value;
+    if (regs.GPR[index].read_callback) regs.GPR[index].read_callback();
+    return regs.GPR[index].value;
 }
 
-static inline void WriteFPR(uint64_t Value, uint8_t Index)
+__attribute__((__always_inline__)) static inline void write_FPR(uint64_t value, uint8_t index)
 {
-    Regs.FPR[Index].Value = Value;
-    if (Regs.FPR[Index].WriteCallback) Regs.FPR[Index].WriteCallback();
+    bool FR    = (regs.COP0[COP0_STATUS].value & 0x02000000) > 0;
+    bool is_CR = (index == 0 || index == 31);
+
+    if (index & 1 && !FR) return;
+    
+    regs.FPR[index].value = (FR || is_CR) ? (uint32_t)value : value;
+    if (regs.FPR[index].write_callback) regs.FPR[index].write_callback();
 }
 
-static inline uint64_t ReadFPR(uint8_t Index)
+__attribute__((__always_inline__)) static inline uint64_t read_FPR(uint8_t index)
 {
-    if (Regs.FPR[Index].ReadCallback) Regs.FPR[Index].ReadCallback();
-    return Regs.FPR[Index].Value;
+    bool FR    = (regs.COP0[COP0_STATUS].value & 0x02000000) > 0;
+    bool is_CR = (index == 0 || index == 31);
+
+    if (index & 1 && !FR) return 0;
+
+    if (regs.FPR[index].read_callback) regs.FPR[index].read_callback();
+    return (FR || is_CR) ? (uint32_t)regs.FPR[index].value : regs.FPR[index].value;
 }
 
-static inline void WriteCOP0(uint64_t Value, uint8_t Index)
+__attribute__((__always_inline__)) static inline void write_COP0(uint64_t value, uint8_t index)
 {
-    Regs.COP0[Index].Value = Value;
-    if (Regs.COP0[Index].WriteCallback) Regs.COP0[Index].WriteCallback();
+    regs.COP0[index].value = value;
+    if (regs.COP0[index].write_callback) regs.COP0[index].write_callback();
 }
 
-static inline uint64_t ReadCOP0(uint8_t Index)
+__attribute__((__always_inline__)) static inline uint64_t read_COP0(uint8_t index)
 {
-    if (Regs.COP0[Index].ReadCallback) Regs.COP0[Index].ReadCallback();
-    return Regs.COP0[Index].Value;
+    if (regs.COP0[index].read_callback) regs.COP0[index].read_callback();
+    return regs.COP0[index].value;
 }
 
-static inline void WritePC(uint32_t Value)
+__attribute__((__always_inline__)) static inline void write_PC(uint32_t value)
 {
-    Regs.PC.Value = (uint64_t)Value;
-    if (Regs.PC.WriteCallback) Regs.PC.WriteCallback();
+    regs.PC.value = (uint64_t)value;
+    if (regs.PC.write_callback) regs.PC.write_callback();
 }
 
-static inline uint32_t ReadPC(void)
+__attribute__((__always_inline__)) static inline uint32_t read_PC(void)
 {
-    if (Regs.PC.ReadCallback) Regs.PC.ReadCallback();
-    return Regs.PC.Value;
+    if (regs.PC.read_callback) regs.PC.read_callback();
+    return regs.PC.value;
 }
 
-static inline void AdvancePC(void)
+__attribute__((__always_inline__)) static inline void advance_PC(void)
 {
-    WritePC(ReadPC() + 4);
+    write_PC(read_PC() + 4);
 }
 
-static inline void WriteHI(uint64_t Value)
+__attribute__((__always_inline__)) static inline void write_HI(uint64_t value)
 {
-    Regs.HI.Value = Value;
-    if (Regs.HI.WriteCallback) Regs.HI.WriteCallback();
+    regs.HI.value = value;
+    if (regs.HI.write_callback) regs.HI.write_callback();
 }
 
-static inline uint64_t ReadHI(void)
+__attribute__((__always_inline__)) static inline uint64_t read_HI(void)
 {
-    if (Regs.HI.ReadCallback) Regs.HI.ReadCallback();
-    return Regs.HI.Value;
+    if (regs.HI.read_callback) regs.HI.read_callback();
+    return regs.HI.value;
 }
 
-static inline void WriteLO(uint64_t Value)
+__attribute__((__always_inline__)) static inline void write_LO(uint64_t value)
 {
-    Regs.LO.Value = Value;
-    if (Regs.LO.WriteCallback) Regs.LO.WriteCallback();
+    regs.LO.value = value;
+    if (regs.LO.write_callback) regs.LO.write_callback();
 }
 
-static inline uint64_t ReadLO(void)
+__attribute__((__always_inline__)) static inline uint64_t read_LO(void)
 {
-    if (Regs.LO.ReadCallback) Regs.LO.ReadCallback();
-    return Regs.LO.Value;
+    if (regs.LO.read_callback) regs.LO.read_callback();
+    return regs.LO.value;
 }

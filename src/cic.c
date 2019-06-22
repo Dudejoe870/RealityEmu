@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 
-uint32_t CRC32(uint32_t Base, size_t size) 
+uint32_t CRC32(uint32_t base, size_t size) 
 {
     uint32_t table[256];
     unsigned n, k;
@@ -28,7 +28,7 @@ uint32_t CRC32(uint32_t Base, size_t size)
     c = 0L ^ 0xFFFFFFFF;
 
     for (n = 0; n < size; ++n)
-        c = table[(c ^ ReadUInt8(Base + n)) & 0xFF] ^ (c >> 8);
+        c = table[(c ^ read_uint8(base + n)) & 0xFF] ^ (c >> 8);
 
     return c ^ 0xFFFFFFFF;
 }
@@ -54,12 +54,12 @@ uint32_t CRC32(uint32_t Base, size_t size)
 #define CRC_iQue_2 0xB98CED9AU
 #define CRC_iQue_3 0xE71C2766U
 
-uint32_t GetCICSeed(void)
+uint32_t get_CIC_seed(void)
 {
     uint32_t CRC        = CRC32(0x10000040, 0xFC0);
-    uint32_t Aleck64CRC = CRC32(0x10000040, 0xBC0);
+    uint32_t aleck64_CRC = CRC32(0x10000040, 0xBC0);
 
-    if (Aleck64CRC == CRC_NUS_5101) return CIC_SEED_NUS_5101;
+    if (aleck64_CRC == CRC_NUS_5101) return CIC_SEED_NUS_5101;
     switch (CRC)
     {
         default:

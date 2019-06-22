@@ -6,22 +6,23 @@
 
 typedef struct
 {
-    bool Set;
+    bool set;
 
-    uint32_t Base;
-    uint32_t EndAddr;
-    void*    MemBlockRead;
-    void*    MemBlockWrite;
-    bool RW; // If set, it only frees MemBlockRead (Use this if both MemBlockRead and Write are the same)
-    bool ShouldFree; // If set it frees the MemBlock pointer at cleanup.
+    uint32_t base;
+    uint32_t end_addr;
+    void*    mem_block_read;
+    void*    mem_block_write;
+    
+    bool RW :1; // If set, it only frees mem_block_read (Use this if both mem_block_read and write are the same)
+    bool should_free :1; // If set it frees the mem_block pointers at cleanup.
 
-    void (*ReadCallback)(uint32_t Addr); // Can be NULL
-    void (*WriteCallback)(uint64_t Value, uint32_t Addr); // Can be NULL
+    void (*read_callback)(uint32_t addr); // Can be NULL
+    void (*write_callback)(uint64_t value, uint32_t addr); // Can be NULL
 } mementry_t;
 
 #define MEMORY_ENTRIES 256
 
-mementry_t MemEntries[MEMORY_ENTRIES];
+mementry_t mem_entries[MEMORY_ENTRIES];
 
 void* RDRAM_RW;
 
@@ -61,8 +62,17 @@ uint32_t VI_V_BURST_REG_RW;
 uint32_t VI_X_SCALE_REG_RW;
 uint32_t VI_Y_SCALE_REG_RW;
 
+uint32_t AI_DRAM_ADDR_REG_R;
+uint32_t AI_DRAM_ADDR_REG_W;
+uint32_t AI_LEN_REG_RW;
+uint32_t AI_CONTROL_REG_R;
+uint32_t AI_CONTROL_REG_W;
 uint32_t AI_STATUS_REG_R;
 uint32_t AI_STATUS_REG_W;
+uint32_t AI_DACRATE_REG_R;
+uint32_t AI_DACRATE_REG_W;
+uint32_t AI_BITRATE_REG_R;
+uint32_t AI_BITRATE_REG_W;
 
 uint32_t PI_DRAM_ADDR_REG_RW;
 uint32_t PI_CART_ADDR_REG_RW;
@@ -86,22 +96,22 @@ uint32_t SI_STATUS_REG_R;
 
 void* PIF_RAM_RW;
 
-void MemoryInit(void* ROM, size_t ROMSize);
-void MemoryDeInit(void);
+void memory_init(void* ROM, size_t ROM_size);
+void memory_cleanup(void);
 
-void WriteUInt8(uint8_t Value, uint32_t Addr);
-uint8_t ReadUInt8(uint32_t Addr);
+void write_uint8(uint8_t value, uint32_t addr);
+uint8_t read_uint8(uint32_t addr);
 
-void WriteUInt16(uint16_t Value, uint32_t Addr);
-uint16_t ReadUInt16(uint32_t Addr);
+void write_uint16(uint16_t value, uint32_t addr);
+uint16_t read_uint16(uint32_t addr);
 
-void WriteUInt32(uint32_t Value, uint32_t Addr);
-uint32_t ReadUInt32(uint32_t Addr);
+void write_uint32(uint32_t value, uint32_t addr);
+uint32_t read_uint32(uint32_t addr);
 
-void WriteUInt64(uint64_t Value, uint32_t Addr);
-uint64_t ReadUInt64(uint32_t Addr);
+void write_uint64(uint64_t value, uint32_t addr);
+uint64_t read_uint64(uint32_t addr);
 
-void MemoryCopy(uint32_t Dest, uint32_t Source, size_t Length);
+void memory_memcpy(uint32_t dest, uint32_t source, size_t length);
 
-void* GetRealMemoryLoc(uint32_t Addr);
-void* GetFramebuffer(void);
+void* get_real_memory_loc(uint32_t addr);
+void* get_framebuffer(void);

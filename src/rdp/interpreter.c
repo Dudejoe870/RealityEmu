@@ -10,141 +10,141 @@
 #include <byteswap.h>
 #include <stdio.h>
 
-static inline void UndefinedInstError(uint64_t Value)
+__attribute__((__always_inline__)) static inline void undefined_inst_error(uint64_t value)
 {
-    fprintf(stderr, "ERROR: Unimplemented RDP Command 0x%lx!  RDP PC: 0x%x\n", Value, bswap_32(DPC_CURRENT_REG_R));
-    IsRunning = false;
+    fprintf(stderr, "ERROR: Unimplemented RDP command 0x%lx!  RDP PC: 0x%x\n", value, bswap_32(DPC_CURRENT_REG_R));
+    is_running = false;
 }
 
-static inline uint64_t GetCoeff(uint8_t Offset)
+__attribute__((__always_inline__)) static inline uint64_t get_coeff(uint8_t offset)
 {
     return ((bswap_32(DPC_STATUS_REG_R) & 1) > 0) 
-           ? bswap_64(((uint64_t*)SP_DMEM_RW)[bswap_32(DPC_CURRENT_REG_R & 0xFFF) + Offset]) 
-           : ReadUInt64(bswap_32(DPC_CURRENT_REG_R) + Offset);
+           ? bswap_64(((uint64_t*)SP_DMEM_RW)[bswap_32(DPC_CURRENT_REG_R & 0xFFF) + offset]) 
+           : read_uint64(bswap_32(DPC_CURRENT_REG_R) + offset);
 }
 
-static inline void AddPC(uint8_t ToAdd)
+__attribute__((__always_inline__)) static inline void add_PC(uint8_t ToAdd)
 {
     DPC_CURRENT_REG_R = bswap_32(bswap_32(DPC_CURRENT_REG_R) + ToAdd);
 }
 
-static inline void SetPC(uint32_t ToSet)
+__attribute__((__always_inline__)) static inline void set_PC(uint32_t ToSet)
 {
     DPC_CURRENT_REG_R = bswap_32(ToSet);
 }
 
-void RDPStep(void)
+void RDP_step(void)
 {
-    uint64_t Inst = ((bswap_32(DPC_STATUS_REG_R) & 1) > 0) 
+    uint64_t inst = ((bswap_32(DPC_STATUS_REG_R) & 1) > 0) 
                     ? bswap_64(((uint64_t*)SP_DMEM_RW)[bswap_32(DPC_CURRENT_REG_R & 0xFFF)]) 
-                    : ReadUInt64(bswap_32(DPC_CURRENT_REG_R));
-    cmd_t Command = CMDTable[(Inst & 0x3F00000000000000) >> 56];
+                    : read_uint64(bswap_32(DPC_CURRENT_REG_R));
+    cmd_t command = CMDtable[(inst & 0x3F00000000000000) >> 56];
 
-    if (Command.Interpret == NULL && Inst != 0) 
+    if (command.interpret == NULL && inst != 0) 
     {
-        UndefinedInstError(Inst);
+        undefined_inst_error(inst);
         return;
     }
 
-    if (Inst != 0) Command.Interpret(Inst);
-    else AddPC(8);
+    if (inst != 0) command.interpret(inst);
+    else add_PC(8);
 
     if (DPC_CURRENT_REG_R == DPC_END_REG_RW)
-        ShouldRun = false;
+        should_run = false;
 }
 
-void SetColorImage(uint64_t Value)
+void cmd_SetColorImage(uint64_t value)
 {
-    image_t Image;
-    Image.ImageFormat = (imageformat_t)((Value & 0x00E0000000000000) >> 53);
-    Image.ImageSize   = (bpp_t)        ((Value & 0x0018000000000000) >> 51);
-    Image.ImageWidth  = (uint16_t)     ((Value & 0x000003FF00000000) >> 32);
-    Image.ImageAddr   = (uint32_t)      (Value & 0x000000001FFFFFFF);
+    image_t image;
+    image.image_format = (imageformat_t)((value & 0x00E0000000000000) >> 53);
+    image.image_size   = (bpp_t)        ((value & 0x0018000000000000) >> 51);
+    image.image_width  = (uint16_t)     ((value & 0x000003FF00000000) >> 32);
+    image.image_addr   = (uint32_t)      (value & 0x000000001FFFFFFF);
 
-    currColorImage = Image;
-    AddPC(8);
+    curr_colorimage = image;
+    add_PC(8);
 }
 
-void FillRectangle(uint64_t Value)
+void cmd_FillRectangle(uint64_t value)
 {
-    rect_t Rect;
-    Rect.XL = (uint16_t)((Value & 0x00FFF00000000000) >> 44);
-    Rect.YL = (uint16_t)((Value & 0x00000FFF00000000) >> 32);
-    Rect.XH = (uint16_t)((Value & 0x0000000000FFF000) >> 12);
-    Rect.YH = (uint16_t) (Value & 0x0000000000000FFF);
+    rect_t rect;
+    rect.XL = (uint16_t)((value & 0x00FFF00000000000) >> 44);
+    rect.YL = (uint16_t)((value & 0x00000FFF00000000) >> 32);
+    rect.XH = (uint16_t)((value & 0x0000000000FFF000) >> 12);
+    rect.YH = (uint16_t) (value & 0x0000000000000FFF);
 
-    FillRect(&Rect);
-    AddPC(8);
+    fill_rect(&rect);
+    add_PC(8);
 }
 
-void SetOtherModes(uint64_t Value)
+void cmd_SetOtherModes(uint64_t value)
 {
     // Stubbed for now.
-    AddPC(8);
+    add_PC(8);
 }
 
-void SetFillColor(uint64_t Value)
+void cmd_SetFillColor(uint64_t value)
 {
-    FillColor = (uint32_t)(Value & 0xFFFFFFFF);
-    AddPC(8);
+    fill_color = (uint32_t)(value & 0xFFFFFFFF);
+    add_PC(8);
 }
 
-void SetScissor(uint64_t Value)
+void cmd_SetScissor(uint64_t value)
 {
-    scissorborder_t Scissor;
-    Scissor.Border.XH = (uint16_t)((Value & 0x00FFF00000000000) >> 44);
-    Scissor.Border.YH = (uint16_t)((Value & 0x00000FFF00000000) >> 32);
-    Scissor.Border.XL = (uint16_t)((Value & 0x0000000000FFF000) >> 12);
-    Scissor.Border.YL = (uint16_t) (Value & 0x0000000000000FFF);
+    scissorborder_t scissor;
+    scissor.border.XH = (uint16_t)((value & 0x00FFF00000000000) >> 44);
+    scissor.border.YH = (uint16_t)((value & 0x00000FFF00000000) >> 32);
+    scissor.border.XL = (uint16_t)((value & 0x0000000000FFF000) >> 12);
+    scissor.border.YL = (uint16_t) (value & 0x0000000000000FFF);
 
-    Scissor.f = ((Value & 0x0000000002000000) > 0);
-    Scissor.o = ((Value & 0x0000000001000000) > 0);
+    scissor.f = ((value & 0x0000000002000000) > 0);
+    scissor.o = ((value & 0x0000000001000000) > 0);
 
-    ScissorBorder = Scissor;
-    AddPC(8);
+    scissor_border = scissor;
+    add_PC(8);
 }
 
-void SyncFull(uint64_t Value)
+void cmd_SyncFull(uint64_t value)
 {
-    InvokeMIInterrupt(MI_INTR_DP);
-    AddPC(8);
+    invoke_mi_interrupt(MI_INTR_DP);
+    add_PC(8);
 }
 
-void SyncPipe(uint64_t Value)
+void cmd_SyncPipe(uint64_t value)
 {
     // Stubbed.
-    AddPC(8);
+    add_PC(8);
 }
 
-void Triangle(uint64_t Value)
+void cmd_Triangle(uint64_t value)
 {
-    edgecoeff_t Edges;
-    Edges.lft = (Value & 0x0080000000000000) > 0;
+    edgecoeff_t edges;
+    edges.lft = (value & 0x0080000000000000) > 0;
 
-    Edges.YL  = (uint16_t)((Value & 0x00003FFF00000000) >> 32);
-    Edges.YM  = (uint16_t)((Value & 0x000000003FFF0000) >> 16);
-    Edges.YH  = (uint16_t)((Value & 0x0000000000003FFF));
+    edges.YL  = (uint16_t)((value & 0x00003FFF00000000) >> 32);
+    edges.YM  = (uint16_t)((value & 0x000000003FFF0000) >> 16);
+    edges.YH  = (uint16_t)((value & 0x0000000000003FFF));
 
-    uint64_t EdgeCoeff1 = GetCoeff(8);
-    uint64_t EdgeCoeff2 = GetCoeff(16);
-    uint64_t EdgeCoeff3 = GetCoeff(24);
+    uint64_t edge_coeff1 = get_coeff(8);
+    uint64_t edge_coeff2 = get_coeff(16);
+    uint64_t edge_coeff3 = get_coeff(24);
 
-    Edges.XL        = (uint16_t)((EdgeCoeff1 & 0xFFFF000000000000) >> 48);
-    Edges.XLFrac    = (uint16_t)((EdgeCoeff1 & 0x0000FFFF00000000) >> 32);
-    Edges.DxLDy     = (uint16_t)((EdgeCoeff1 & 0x00000000FFFF0000) >> 16);
-    Edges.DxLDyFrac = (uint16_t)((EdgeCoeff1 & 0x000000000000FFFF));
+    edges.XL        = (uint16_t)((edge_coeff1 & 0xFFFF000000000000) >> 48);
+    edges.XL_frac    = (uint16_t)((edge_coeff1 & 0x0000FFFF00000000) >> 32);
+    edges.DxLDy     = (uint16_t)((edge_coeff1 & 0x00000000FFFF0000) >> 16);
+    edges.DxLDy_frac = (uint16_t)((edge_coeff1 & 0x000000000000FFFF));
 
-    Edges.XH        = (uint16_t)((EdgeCoeff2 & 0xFFFF000000000000) >> 48);
-    Edges.XHFrac    = (uint16_t)((EdgeCoeff2 & 0x0000FFFF00000000) >> 32);
-    Edges.DxHDy     = (uint16_t)((EdgeCoeff2 & 0x00000000FFFF0000) >> 16);
-    Edges.DxHDyFrac = (uint16_t)((EdgeCoeff2 & 0x000000000000FFFF));
+    edges.XH        = (uint16_t)((edge_coeff2 & 0xFFFF000000000000) >> 48);
+    edges.XH_frac    = (uint16_t)((edge_coeff2 & 0x0000FFFF00000000) >> 32);
+    edges.DxHDy     = (uint16_t)((edge_coeff2 & 0x00000000FFFF0000) >> 16);
+    edges.DxHDy_frac = (uint16_t)((edge_coeff2 & 0x000000000000FFFF));
 
-    Edges.XM        = (uint16_t)((EdgeCoeff3 & 0xFFFF000000000000) >> 48);
-    Edges.XMFrac    = (uint16_t)((EdgeCoeff3 & 0x0000FFFF00000000) >> 32);
-    Edges.DxMDy     = (uint16_t)((EdgeCoeff3 & 0x00000000FFFF0000) >> 16);
-    Edges.DxMDyFrac = (uint16_t)((EdgeCoeff3 & 0x000000000000FFFF));
+    edges.XM        = (uint16_t)((edge_coeff3 & 0xFFFF000000000000) >> 48);
+    edges.XM_frac    = (uint16_t)((edge_coeff3 & 0x0000FFFF00000000) >> 32);
+    edges.DxMDy     = (uint16_t)((edge_coeff3 & 0x00000000FFFF0000) >> 16);
+    edges.DxMDy_frac = (uint16_t)((edge_coeff3 & 0x000000000000FFFF));
 
-    DrawTriangle(&Edges, NULL, NULL, NULL);
+    draw_triangle(&edges, NULL, NULL, NULL);
 
-    AddPC(32);
+    add_PC(32);
 }

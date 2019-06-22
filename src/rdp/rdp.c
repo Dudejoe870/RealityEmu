@@ -6,37 +6,25 @@
 #include "cmdtable.h"
 
 #include <pthread.h>
+#include <sched.h>
+#include <stdio.h>
 
-pthread_cond_t  Cond = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t Lock = PTHREAD_MUTEX_INITIALIZER;
-
-void* RunRDP(void* vargp)
+void* RDP_run(void* vargp)
 {
-    while (IsRunning)
-    {
-        pthread_mutex_lock(&Lock);
-        while (!ShouldRun && IsRunning)
-            pthread_cond_wait(&Cond, &Lock);
-        pthread_mutex_unlock(&Lock);
-        if (!IsRunning) break;
-        RDPStep();
-    }
+    while (is_running && should_run)
+        RDP_step();
     return NULL;
 }
 
-void RDPInit(void)
+void RDP_init(void)
 {
-    RDP_CMDTableInit();
-
-    pthread_t RDPThread;
-
-    pthread_create(&RDPThread, NULL, RunRDP, NULL);
+    RDP_CMDtable_init();
 }
 
-void RDPWakeUp(void)
+void RDP_wake_up(void)
 {
-    ShouldRun = true;
-    pthread_mutex_lock(&Lock);
-    pthread_cond_signal(&Cond);
-    pthread_mutex_unlock(&Lock);
+    should_run = true;
+    pthread_t RDP_thread;
+
+    pthread_create(&RDP_thread, NULL, RDP_run, NULL);
 }

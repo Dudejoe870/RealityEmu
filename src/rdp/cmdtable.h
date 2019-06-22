@@ -4,9 +4,9 @@
 
 typedef struct
 {
-    void (*Interpret)(uint64_t Value);
+    void (*interpret)(uint64_t value);
 } cmd_t;
 
-cmd_t CMDTable[0x3F+1];
+cmd_t CMDtable[0x3F+1];
 
-void RDP_CMDTableInit(void);
+void RDP_CMDtable_init(void);
