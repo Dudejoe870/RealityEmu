@@ -97,16 +97,16 @@ __attribute__((__always_inline__)) static inline void DIVU_reg(uint8_t reg1, uin
 
 __attribute__((__always_inline__)) static inline void MULT_reg(uint8_t reg1, uint8_t reg2)
 {
-    long Res = (long)((int)read_GPR(reg1) * (int)read_GPR(reg2));
-    write_LO(Res & 0xFFFFFFFF);
-    write_HI(Res >> 32);
+    long res = (long)((int)read_GPR(reg1) * (int)read_GPR(reg2));
+    write_LO(res & 0xFFFFFFFF);
+    write_HI(res >> 32);
 }
 
 __attribute__((__always_inline__)) static inline void MULTU_reg(uint8_t reg1, uint8_t reg2)
 {
-    uint64_t Res = (uint32_t)read_GPR(reg1) * (uint32_t)read_GPR(reg2);
-    write_LO((uint32_t)Res);
-    write_HI((uint32_t)(Res >> 32));
+    uint64_t res = (uint32_t)read_GPR(reg1) * (uint32_t)read_GPR(reg2);
+    write_LO((uint32_t)res);
+    write_HI((uint32_t)(res >> 32));
 }
 
 __attribute__((__always_inline__)) static inline void SLL_imm(uint8_t reg, uint8_t dst, uint8_t sa)
@@ -170,16 +170,16 @@ __attribute__((__always_inline__)) static inline void DDIVU_reg(uint8_t reg1, ui
 
 __attribute__((__always_inline__)) static inline void DMULT_reg(uint8_t reg1, uint8_t reg2)
 {
-    __int128 Res = (long)read_GPR(reg1) * (long)read_GPR(reg2);
-    write_LO(Res);
-    write_HI(Res >> 64);
+    __int128 res = (long)read_GPR(reg1) * (long)read_GPR(reg2);
+    write_LO(res);
+    write_HI(res >> 64);
 }
 
 __attribute__((__always_inline__)) static inline void DMULTU_reg(uint8_t reg1, uint8_t reg2)
 {
-    __int128 Res = (uint64_t)read_GPR(reg1) * (uint64_t)read_GPR(reg2);
-    write_LO((uint64_t)Res);
-    write_HI((uint64_t)(Res >> 64));
+    __int128 res = (uint64_t)read_GPR(reg1) * (uint64_t)read_GPR(reg2);
+    write_LO((uint64_t)res);
+    write_HI((uint64_t)(res >> 64));
 }
 
 __attribute__((__always_inline__)) static inline void DSLL_imm(uint8_t reg, uint8_t dst, uint8_t sa)
