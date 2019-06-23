@@ -271,7 +271,7 @@ __attribute__((__always_inline__)) static inline void JUMP_imm(uint32_t target)
     curr_target  = (target << 2) | (((uint32_t)regs.PC.value + 4) & 0xF0000000);
 }
 
-__attribute__((__always_inline__)) static inline void link(void)
+__attribute__((__always_inline__)) static inline void link_PC(void)
 {
     regs.GPR[31].value = (uint32_t)regs.PC.value + 8; // Hyah!
 }
@@ -484,7 +484,7 @@ __attribute__((__always_inline__)) static inline void DSUBU(uint32_t value)
 
 __attribute__((__always_inline__)) static inline void JALR(uint32_t value)
 {
-    link();
+    link_PC();
     JUMP_reg(INST_RS(value));
     advance_PC();
 }
@@ -816,14 +816,14 @@ __attribute__((__always_inline__)) static inline void BGEZ(uint32_t value)
 
 __attribute__((__always_inline__)) static inline void BGEZAL(uint32_t value)
 {
-    link();
+    link_PC();
     BRANCH_cond(INST_IMM(value), (int)read_GPR(INST_RS(value)) >= 0);
     advance_PC();
 }
 
 __attribute__((__always_inline__)) static inline void BGEZALL(uint32_t value)
 {
-    link();
+    link_PC();
     BRANCH_cond_likely(INST_IMM(value), (int)read_GPR(INST_RS(value)) >= 0);
     advance_PC();
 }
@@ -842,14 +842,14 @@ __attribute__((__always_inline__)) static inline void BLTZ(uint32_t value)
 
 __attribute__((__always_inline__)) static inline void BLTZAL(uint32_t value)
 {
-    link();
+    link_PC();
     BRANCH_cond(INST_IMM(value), (int)read_GPR(INST_RS(value)) < 0);
     advance_PC();
 }
 
 __attribute__((__always_inline__)) static inline void BLTZALL(uint32_t value)
 {
-    link();
+    link_PC();
     BRANCH_cond_likely(INST_IMM(value), (int)read_GPR(INST_RS(value)) < 0);
     advance_PC();
 }
@@ -1328,7 +1328,7 @@ void J(uint32_t value)
 
 void JAL(uint32_t value)
 {
-    link();
+    link_PC();
     JUMP_imm(INST_TARGET(value));
     advance_PC();
 }

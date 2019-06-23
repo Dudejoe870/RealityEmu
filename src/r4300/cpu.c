@@ -4,17 +4,12 @@
 
 void* measure_mhz(void* vargp)
 {
-    uint32_t count = 0;
     while (is_running)
     {
-        if (count >= 10000)
-        {
-            float time_seconds = ((float)clock()) / CLOCKS_PER_SEC;
+        float time_seconds = ((float)clock()) / CLOCKS_PER_SEC;
 
-            CPU_mhz = (get_all_cycles() / 1000000) / time_seconds;
-            count = 0;
-        }
-        ++count;
+        CPU_mhz = (get_all_cycles() / 1000000) / time_seconds;
+        sleep(1);
     }
     return NULL;
 }

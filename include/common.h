@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <unistd.h>
 #include <byteswap.h>
 #include <string.h>
 #include <time.h>

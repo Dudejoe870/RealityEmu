@@ -130,11 +130,10 @@ int window_run(void)
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    uint8_t pixel_size = 0;
+    uint8_t  pixel_size = 0;
     uint32_t framebuffer_width  = 0;
     uint32_t framebuffer_height = 0;
-    void* frame = NULL;
-    frame = get_framebuffer_image(&framebuffer_width, &framebuffer_height, &pixel_size);
+    void*    frame = get_framebuffer_image(&framebuffer_width, &framebuffer_height, &pixel_size);
 
     if (frame != NULL)
     {
