@@ -1,5 +1,4 @@
-#include "opcodetable.h"
-#include "interpreter.h"
+#include "common.h"
 
 void opcode_table_init(void)
 {

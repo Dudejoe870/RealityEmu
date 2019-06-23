@@ -1,12 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "r4300/cpu.h"
-#include "r4300/mem.h"
-#include "config.h"
-#include "window.h"
-#include "cart.h"
+#include "common.h"
 
 #define WINDOW_WIDTH  960
 #define WINDOW_HEIGHT 720

@@ -1,6 +1,4 @@
-#include "cmdtable.h"
-
-#include "interpreter.h"
+#include "common.h"
 
 void RDP_CMDtable_init(void)
 {

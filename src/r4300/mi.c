@@ -1,10 +1,6 @@
-#include "mi.h"
+#include "r4300/mi.h"
 
-#include "mem.h"
-#include "cpu.h"
-
-#include <stdio.h>
-#include <byteswap.h>
+#include "common.h"
 
 void invoke_mi_interrupt(uint8_t interrupt)
 {

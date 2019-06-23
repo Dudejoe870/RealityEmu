@@ -1,9 +1,4 @@
-#include "tlb.h"
-
-#include "cpu.h"
-
-#include <stddef.h>
-#include <stdio.h>
+#include "common.h"
 
 uint32_t TLB_translate_address(uint32_t addr)
 {

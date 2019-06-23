@@ -6,5 +6,7 @@
         "ratio": "c",
         "system_error": "c",
         "type_traits": "c"
-    }
+    },
+    "C_Cpp.default.cStandard": "c11",
+    "C_Cpp.default.intelliSenseMode": "gcc-x64"
 }

@@ -1,16 +1,6 @@
-#include "interpreter.h"
+#include "r4300/interpreter.h"
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <byteswap.h>
-
-#include "cpu.h"
-#include "opcodetable.h"
-#include "mem.h"
-#include "exception.h"
-#include "mi.h"
-#include "../config.h"
-#include "tlb.h"
+#include "common.h"
 
 #define INST_OP_MSK     0b11111100000000000000000000000000
 #define INST_RS_MSK     0b00000011111000000000000000000000

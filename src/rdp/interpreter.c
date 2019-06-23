@@ -1,14 +1,6 @@
-#include "interpreter.h"
+#include "rdp/interpreter.h"
 
-#include "rdp.h"
-#include "software_rasterizer.h"
-#include "../r4300/cpu.h"
-#include "cmdtable.h"
-#include "../r4300/mem.h"
-#include "../r4300/mi.h"
-
-#include <byteswap.h>
-#include <stdio.h>
+#include "common.h"
 
 __attribute__((__always_inline__)) static inline void undefined_inst_error(uint64_t value)
 {

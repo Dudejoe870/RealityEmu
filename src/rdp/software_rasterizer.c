@@ -1,11 +1,6 @@
-#include "software_rasterizer.h"
+#include "rdp/software_rasterizer.h"
 
-#include <stddef.h>
-#include <stdio.h>
-#include <byteswap.h>
-#include <string.h>
-
-#include "../r4300/mem.h"
+#include "common.h"
 
 #define SCANBUFFER_HEIGHT 480
 

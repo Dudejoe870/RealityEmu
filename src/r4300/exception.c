@@ -1,10 +1,6 @@
-#include "exception.h"
+#include "r4300/exception.h"
 
-#include "cpu.h"
-#include "interpreter.h"
-#include "../config.h"
-
-#include <stdio.h>
+#include "common.h"
 
 typedef enum
 {

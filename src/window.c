@@ -5,19 +5,12 @@
 
 #include "SDL2/SDL.h"
 
-#include "r4300/mem.h"
-#include "r4300/cpu.h"
-#include "cart.h"
-
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <byteswap.h>
-#include <string.h>
+#include "common.h"
 
 SDL_Window* window = NULL;
 SDL_GLContext context;
 GLuint framebuffer_texture = 0;
+cartheader_t* header;
 
 int window_init(int width, int height, char* title)
 {
@@ -62,6 +55,8 @@ int window_init(int width, int height, char* title)
 
     glClearColor(0, 0, 0, 1);
 
+    header = get_real_memory_loc(0xB0000000);
+
     return 0;
 }
 
@@ -101,14 +96,14 @@ void* get_framebuffer_image(uint32_t* width, uint32_t* height, uint8_t* pixel_si
 
     for (size_t y = v_start_of_video; y < v_end_of_video; ++y)
     {
-        uint32_t Line = (y - v_start_of_video) >> (~interlaced & 1);
-        uint32_t offset = pitch * Line;
+        uint32_t line = (y - v_start_of_video) >> (~interlaced & 1);
+        uint32_t offset = pitch * line;
 
         if (bytes_per_pixel == 4)
             memcpy(frame_copy + offset, ((uint8_t*)framebuffer) + offset, pitch);
         else
         {
-            for (size_t End = offset + pitch; offset < End; offset += 2)
+            for (size_t end = offset + pitch; offset < end; offset += 2)
             {
                 frame_copy[offset]     = ((uint8_t*)framebuffer)[offset + 1];
                 frame_copy[offset + 1] = ((uint8_t*)framebuffer)[offset];
@@ -158,8 +153,7 @@ int window_run(void)
 
         glEnd();
     }
-    
-    cartheader_t* header = get_real_memory_loc(0x10000000);
+
     char win_name[64];
     strcpy(win_name, "RealityEmu - ");
     strcat(win_name, header->name);

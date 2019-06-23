@@ -1,18 +1,6 @@
-#include "cpu.h"
+#include "r4300/cpu.h"
 
-#include <pthread.h>
-#include <sched.h>
-#include <stdio.h>
-#include <byteswap.h>
-
-#include "mem.h"
-#include "../cic.h"
-#include "opcodetable.h"
-#include "interpreter.h"
-#include "../config.h"
-#include "../rdp/rdp.h"
-
-#include <time.h>
+#include "common.h"
 
 void* measure_mhz(void* vargp)
 {
