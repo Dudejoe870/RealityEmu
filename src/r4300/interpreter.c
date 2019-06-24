@@ -40,16 +40,6 @@ uint64_t cycles         = 0;
 uint64_t all_cycles      = 0;
 uint32_t vi_cycle_count = 0;
 
-bool get_is_branching(void)
-{
-    return is_branching;
-}
-
-uint64_t get_all_cycles(void)
-{
-    return all_cycles;
-}
-
 __attribute__((__always_inline__)) static inline void undefined_inst_error(uint32_t value)
 {
     fprintf(stderr, "ERROR: Unimplemented Instruction 0x%x!  PC: 0x%x\n", value, (uint32_t)regs.PC.value);
@@ -73,30 +63,48 @@ __attribute__((__always_inline__)) static inline void SUB_reg(uint8_t reg1, uint
 
 __attribute__((__always_inline__)) static inline void DIV_reg(uint8_t reg1, uint8_t reg2)
 {
-    if ((uint32_t)read_GPR(reg2) == 0) return;
-    write_LO((long)((int)read_GPR(reg1) / (int)read_GPR(reg2)));
-    write_HI((long)((int)read_GPR(reg1) % (int)read_GPR(reg2)));
+    if ((int)read_GPR(reg2))
+    {
+        write_LO((int)read_GPR(reg1) / (long)((int)read_GPR(reg2)));
+        write_HI((int)read_GPR(reg1) % (long)((int)read_GPR(reg2)));
+    }
+    else
+    {
+        if ((int)read_GPR(reg1) > 0)
+            write_LO(0xFFFFFFFF);
+        else if ((int)read_GPR(reg1) < 0)
+            write_LO(0x00000001);
+
+        write_HI((int)read_GPR(reg1));
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DIVU_reg(uint8_t reg1, uint8_t reg2)
 {
-    if ((uint32_t)read_GPR(reg2) == 0) return;
-    write_LO((uint32_t)read_GPR(reg1) / (uint32_t)read_GPR(reg2));
-    write_HI((uint32_t)read_GPR(reg1) % (uint32_t)read_GPR(reg2));
+    if ((uint32_t)read_GPR(reg2))
+    {
+        write_LO((uint32_t)read_GPR(reg1) / (uint64_t)((uint32_t)read_GPR(reg2)));
+        write_HI((uint32_t)read_GPR(reg1) % (uint64_t)((uint32_t)read_GPR(reg2)));
+    }
+    else
+    {
+        write_LO(0xFFFFFFFF);
+        write_HI((uint32_t)read_GPR(reg1));
+    }
 }
 
 __attribute__((__always_inline__)) static inline void MULT_reg(uint8_t reg1, uint8_t reg2)
 {
-    long res = (long)((int)read_GPR(reg1) * (int)read_GPR(reg2));
+    long res = (int)read_GPR(reg1) * (long)((int)read_GPR(reg2));
     write_LO(res & 0xFFFFFFFF);
     write_HI(res >> 32);
 }
 
 __attribute__((__always_inline__)) static inline void MULTU_reg(uint8_t reg1, uint8_t reg2)
 {
-    uint64_t res = (uint32_t)read_GPR(reg1) * (uint32_t)read_GPR(reg2);
-    write_LO((uint32_t)res);
-    write_HI((uint32_t)(res >> 32));
+    uint64_t res = (uint32_t)read_GPR(reg1) * (uint64_t)((uint32_t)read_GPR(reg2));
+    write_LO(res & 0xFFFFFFFF);
+    write_HI((long)res >> 32);
 }
 
 __attribute__((__always_inline__)) static inline void SLL_imm(uint8_t reg, uint8_t dst, uint8_t sa)
@@ -146,30 +154,61 @@ __attribute__((__always_inline__)) static inline void DSUB_reg(uint8_t reg1, uin
 
 __attribute__((__always_inline__)) static inline void DDIV_reg(uint8_t reg1, uint8_t reg2)
 {
-    if (read_GPR(reg2) == 0) return;
-    write_LO((long)((long)read_GPR(reg1) / (long)read_GPR(reg2)));
-    write_HI((long)((long)read_GPR(reg1) % (long)read_GPR(reg2)));
+    if ((long)read_GPR(reg2))
+    {
+        write_LO((long)read_GPR(reg1) / (__int128_t)((long)read_GPR(reg2)));
+        write_HI((long)read_GPR(reg1) % (__int128_t)((long)read_GPR(reg2)));
+    }
+    else
+    {
+        if ((long)read_GPR(reg1) > 0)
+            write_LO(0xFFFFFFFFFFFFFFFF);
+        else if ((long)read_GPR(reg1) < 0)
+            write_LO(0x0000000000000001);
+
+        write_HI((long)read_GPR(reg1));
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DDIVU_reg(uint8_t reg1, uint8_t reg2)
 {
-    if (read_GPR(reg2) == 0) return;
-    write_LO(read_GPR(reg1) / read_GPR(reg2));
-    write_HI(read_GPR(reg1) % read_GPR(reg2));
+    if ((uint64_t)read_GPR(reg2))
+    {
+        write_LO((uint64_t)read_GPR(reg1) / (__uint128_t)((uint64_t)read_GPR(reg2)));
+        write_HI((uint64_t)read_GPR(reg1) % (__uint128_t)((uint64_t)read_GPR(reg2)));
+    }
+    else
+    {
+        write_LO(0xFFFFFFFFFFFFFFFF);
+        write_HI((uint64_t)read_GPR(reg1));
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DMULT_reg(uint8_t reg1, uint8_t reg2)
 {
-    __int128 res = (long)read_GPR(reg1) * (long)read_GPR(reg2);
+    __int128_t res = (long)read_GPR(reg1) * (__int128_t)((long)read_GPR(reg2));
     write_LO(res);
     write_HI(res >> 64);
 }
 
 __attribute__((__always_inline__)) static inline void DMULTU_reg(uint8_t reg1, uint8_t reg2)
 {
-    __int128 res = (uint64_t)read_GPR(reg1) * (uint64_t)read_GPR(reg2);
-    write_LO((uint64_t)res);
-    write_HI((uint64_t)(res >> 64));
+    if ((uint64_t)read_GPR(reg2) == 0xFFFFFFFF)
+    {
+        write_LO(0x0000000000000001);
+        write_HI(0xFFFFFFFFFFFFFFFE);
+    }
+    else if ((uint64_t)read_GPR(reg1) == 0xFFFFFFFF)
+    {
+        write_LO(0xFFFFFFFFFFFFFFFE);
+        write_HI(0x0000000000000001);
+    }
+    else
+    {
+        __uint128_t res = (uint64_t)read_GPR(reg1) * (__uint128_t)((uint64_t)read_GPR(reg2));
+        write_LO(res);
+        write_HI((__int128_t)res >> 64);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DSLL_imm(uint8_t reg, uint8_t dst, uint8_t sa)
@@ -278,7 +317,7 @@ __attribute__((__always_inline__)) static inline void link_PC(void)
 
 uint32_t current_scanline = 0;
 
-void step(void)
+void interp_step(void)
 {
     bool should_branch = is_branching;
 

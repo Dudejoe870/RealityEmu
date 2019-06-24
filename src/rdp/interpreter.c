@@ -121,19 +121,19 @@ void cmd_Triangle(uint64_t value)
     uint64_t edge_coeff2 = get_coeff(16);
     uint64_t edge_coeff3 = get_coeff(24);
 
-    edges.XL        = (uint16_t)((edge_coeff1 & 0xFFFF000000000000) >> 48);
+    edges.XL         = (uint16_t)((edge_coeff1 & 0xFFFF000000000000) >> 48);
     edges.XL_frac    = (uint16_t)((edge_coeff1 & 0x0000FFFF00000000) >> 32);
-    edges.DxLDy     = (uint16_t)((edge_coeff1 & 0x00000000FFFF0000) >> 16);
+    edges.DxLDy      = (uint16_t)((edge_coeff1 & 0x00000000FFFF0000) >> 16);
     edges.DxLDy_frac = (uint16_t)((edge_coeff1 & 0x000000000000FFFF));
 
-    edges.XH        = (uint16_t)((edge_coeff2 & 0xFFFF000000000000) >> 48);
+    edges.XH         = (uint16_t)((edge_coeff2 & 0xFFFF000000000000) >> 48);
     edges.XH_frac    = (uint16_t)((edge_coeff2 & 0x0000FFFF00000000) >> 32);
-    edges.DxHDy     = (uint16_t)((edge_coeff2 & 0x00000000FFFF0000) >> 16);
+    edges.DxHDy      = (uint16_t)((edge_coeff2 & 0x00000000FFFF0000) >> 16);
     edges.DxHDy_frac = (uint16_t)((edge_coeff2 & 0x000000000000FFFF));
 
-    edges.XM        = (uint16_t)((edge_coeff3 & 0xFFFF000000000000) >> 48);
+    edges.XM         = (uint16_t)((edge_coeff3 & 0xFFFF000000000000) >> 48);
     edges.XM_frac    = (uint16_t)((edge_coeff3 & 0x0000FFFF00000000) >> 32);
-    edges.DxMDy     = (uint16_t)((edge_coeff3 & 0x00000000FFFF0000) >> 16);
+    edges.DxMDy      = (uint16_t)((edge_coeff3 & 0x00000000FFFF0000) >> 16);
     edges.DxMDy_frac = (uint16_t)((edge_coeff3 & 0x000000000000FFFF));
 
     draw_triangle(&edges, NULL, NULL, NULL);

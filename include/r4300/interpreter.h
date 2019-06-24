@@ -3,10 +3,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-bool     get_is_branching(void);
-uint64_t get_all_cycles(void);
+extern bool is_branching;
+extern uint64_t all_cycles;
 
-void step(void); // Step the CPU.
+void interp_step(void); // Step the interpreter.
 
 // These cover multiple Instructions.
 void SPECIAL(uint32_t value);

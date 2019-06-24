@@ -2,27 +2,12 @@
 
 #include "common.h"
 
-void* measure_mhz(void* vargp)
-{
-    while (is_running)
-    {
-        float time_seconds = ((float)clock()) / CLOCKS_PER_SEC;
-
-        CPU_mhz = (get_all_cycles() / 1000000) / time_seconds;
-        sleep(1);
-    }
-    return NULL;
-}
+#include "SDL2/SDL.h"
 
 void* CPU_run(void* vargp)
 {
-    pthread_t measure_thread;
-
-    pthread_create(&measure_thread, NULL, measure_mhz, NULL);
     while (is_running)
-    {
-        step();
-    }
+        interp_step();
     return NULL;
 }
 
@@ -38,7 +23,7 @@ void CPU_init(void* ROM, size_t ROM_size)
     uint32_t rom_type   = 0;
     uint32_t reset_type = 0;
     uint32_t os_version = 0;
-    uint32_t tv_type = (uint32_t)config.region;
+    uint32_t tv_type    = (uint32_t)config.region;
 
     regs.GPR[1].value  = 0x0000000000000001;
     regs.GPR[2].value  = 0x000000000EBDA536;

@@ -24,8 +24,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <byteswap.h>
 #include <string.h>
 #include <time.h>
 #include <pthread.h>
 #include <sched.h>
+#include <math.h>

@@ -1,9 +1,11 @@
 #include "common.h"
 
+#include "SDL2/SDL.h"
+
 #define WINDOW_WIDTH  960
 #define WINDOW_HEIGHT 720
 
-void ReadFileIntoArray(void** buffer, long* len, char* file)
+void read_file_into_array(void** buffer, long* len, char* file)
 {
     FILE* file_ptr = fopen(file, "rb");
     
@@ -24,36 +26,102 @@ void ReadFileIntoArray(void** buffer, long* len, char* file)
 
 int main(int argc, char** argv)
 {
-    if (argc < 2)
+    int opt;
+
+    bool stop_running = false;
+
+    struct option long_options[] =
     {
-        printf("Usage: %s [ROMFile]\n", argv[0]);
-        return 1;
-    }
+        { "cart",             required_argument, 0, 'c' },
+        { "region",           required_argument, 0, 'r' },
+        { "no-expansion-pak", no_argument,       0,  0  },
+        { "debug",            no_argument,       0,  0  },
+        { "help",             no_argument,       0, 'h' },
+        { 0,      0,                             0,  0  }
+    };
+
+    int option_index;
 
     void* ROM = NULL;
-    long len = 0;
+    long  len = 0;
 
-    ReadFileIntoArray(&ROM, &len, argv[1]);
+    config.region        = REG_NTSC;
+    config.expansion_pak = true;
+    config.debug_logging = false;
+
+    while ((opt = getopt_long(argc, argv, ":c:r:h", long_options, &option_index)) != -1)
+    {
+        switch (opt)
+        {
+            case 0:
+                if (strcmp(long_options[option_index].name, "no-expansion-pak") == 0)
+                    config.expansion_pak = false;
+                else if (strcmp(long_options[option_index].name, "debug") == 0)
+                    config.debug_logging = true;
+                else
+                {
+                    puts("Unknown Option");
+                    stop_running = true;
+                }
+                break;
+            case 'c':
+                read_file_into_array(&ROM, &len, optarg);
+                break;
+            case 'r':
+                if (strcmp(optarg, "NTSC") == 0)
+                    config.region = REG_NTSC;
+                else if (strcmp(optarg, "PAL") == 0)
+                    config.region = REG_PAL;
+                else if (strcmp(optarg, "MPAL") == 0)
+                    config.region = REG_MPAL;
+                else
+                {
+                    printf("%s isn't a valid Region.\n", optarg);
+                    stop_running = true;
+                }
+                break;
+            case 'h':
+                stop_running = true;
+                break;
+            case ':':
+                printf("%s needs value!\n", long_options[option_index].name);
+                stop_running = true;
+                break;
+            case '?':
+                puts("Unknown Option");
+                stop_running = true;
+                break;
+        }
+    }
+
+    if (stop_running)
+    {
+        printf("Usage: %s [Options]\n Options:\n  --cart (-c) [ROM]: Sets the ROM.\n  --region (-r) [Region (NTSC, PAL, MPAL)]: Sets the Region of the emulated Console.\n", argv[0]);
+        puts("  --no-expansion-pak: Disables the Expansion Pak.\n  --debug: Enables Debug Logging.\n  --help (-h): Displays this help message.");
+        return 1;
+    }
 
     if (!ROM)
     {
-        printf("Could not open ROM.\n");
+        puts("Could not open ROM.");
         return 1;
     }
 
-    config.expansion_pak = true;
-    config.debug_logging = true;
-    config.region       = REG_NTSC;
     config.refresh_rate  = (config.region == REG_NTSC || config.region == REG_MPAL) ? 60 : 50;
 
     CPU_init(ROM, (size_t)len);
 
     window_init(WINDOW_WIDTH, WINDOW_HEIGHT, " ");
 
+    float time_seconds;
+
     while (is_running)
     {
         if (window_run() != 0)
             is_running = false;
+        time_seconds = ((float)SDL_GetTicks()) / 1000;
+
+        CPU_mhz = (all_cycles / 1000000) / time_seconds;
     }
 
     window_cleanup();

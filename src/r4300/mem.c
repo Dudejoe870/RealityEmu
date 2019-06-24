@@ -16,7 +16,7 @@ void PI_WR_LEN_WRITE_EVENT(uint64_t value, uint32_t addr)
 
     PI_STATUS_REG_R &= bswap_32(0b1110); // Clear DMA Busy
 
-    printf("PIDMA: Type: Write, DMA length: 0x%x, Cart Address: 0x%x, DRAM Address: 0x%x\n", (uint32_t)value + 1, bswap_32(PI_CART_ADDR_REG_RW), bswap_32(PI_DRAM_ADDR_REG_RW));
+    if (config.debug_logging) printf("PIDMA: Type: Write, DMA Length: 0x%x, Cart Address: 0x%x, DRAM Address: 0x%x\n", (uint32_t)value + 1, bswap_32(PI_CART_ADDR_REG_RW), bswap_32(PI_DRAM_ADDR_REG_RW));
 }
 
 void MI_INTR_MASK_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
