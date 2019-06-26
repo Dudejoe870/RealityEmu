@@ -217,15 +217,15 @@ typedef struct
     rgbdither_t   rgb_dither_sel;
     alphadither_t alpha_dither_sel;
 
-    uint8_t B_M1A_0;
-    uint8_t B_M1A_1;
-    uint8_t B_M1B_0;
-    uint8_t B_M1B_1;
+    uint8_t b_m1a_0;
+    uint8_t b_m1a_1;
+    uint8_t b_m1b_0;
+    uint8_t b_m1b_1;
 
-    uint8_t B_M2A_0;
-    uint8_t B_M2A_1;
-    uint8_t B_M2B_0;
-    uint8_t B_M2B_1;
+    uint8_t b_m2a_0;
+    uint8_t b_m2a_1;
+    uint8_t b_m2b_0;
+    uint8_t b_m2b_1;
 
     bool force_blend;
     bool alpha_cvg_select;

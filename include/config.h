@@ -10,6 +10,12 @@ typedef enum
     REG_MPAL = 2
 } region_t;
 
+typedef enum
+{
+    ROM_GAMEPACK = 0,
+    ROM_DD       = 1
+} romtype_t;
+
 typedef struct
 {
     bool     expansion_pak;

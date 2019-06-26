@@ -4,6 +4,7 @@ void RDP_CMDtable_init(void)
 {
     CMDtable[0x3f].interpret = &cmd_SetColorImage;
     CMDtable[0x36].interpret = &cmd_FillRectangle;
+    CMDtable[0x3c].interpret = &cmd_SetCombineMode;
     CMDtable[0x2f].interpret = &cmd_SetOtherModes;
     CMDtable[0x37].interpret = &cmd_SetFillColor;
     CMDtable[0x2d].interpret = &cmd_SetScissor;

@@ -20,7 +20,7 @@ void CPU_init(void* ROM, size_t ROM_size)
 {
     memory_init(ROM, ROM_size);
 
-    uint32_t rom_type   = 0;
+    uint32_t rom_type   = (uint32_t)ROM_GAMEPACK;
     uint32_t reset_type = 0;
     uint32_t os_version = 0;
     uint32_t tv_type    = (uint32_t)config.region;
@@ -65,12 +65,16 @@ void CPU_init(void* ROM, size_t ROM_size)
     VI_H_SYNC_REG_RW = bswap_32(0xD1);
     VI_V_SYNC_REG_RW = bswap_32(0xD2047);
 
-    uint32_t BSD_DOM1_CONFIG = read_uint32(0x10000000);
+    uint32_t BSD_DOM1_CONFIG = read_uint32(0xB0000000);
 
     PI_BSD_DOM1_LAT_REG_RW = bswap_32((BSD_DOM1_CONFIG      ) & 0xFF);
     PI_BSD_DOM1_PWD_REG_RW = bswap_32((BSD_DOM1_CONFIG >> 8 ) & 0xFF);
     PI_BSD_DOM1_PGS_REG_RW = bswap_32((BSD_DOM1_CONFIG >> 16) & 0xFF);
     PI_BSD_DOM1_RLS_REG_RW = bswap_32((BSD_DOM1_CONFIG >> 20) & 0x03);
+
+    RDRAM_CONFIG_REG       = bswap_32(0xB4190010);
+    RDRAM_DELAY_REG        = bswap_32(0x2B3B1A0B);
+    RDRAM_RAS_INTERVAL_REG = bswap_32(0x101C0A04);
 
     opcode_table_init();
 

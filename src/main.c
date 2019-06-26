@@ -107,7 +107,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    config.refresh_rate  = (config.region == REG_NTSC || config.region == REG_MPAL) ? 60 : 50;
+    config.refresh_rate = (config.region == REG_NTSC || config.region == REG_MPAL) ? 60 : 50;
 
     CPU_init(ROM, (size_t)len);
 

@@ -114,6 +114,141 @@ void memory_init(void* ROM, size_t ROM_size)
     mem_entries[i].set = true;
     ++i;
 
+    if (!config.expansion_pak)
+    {
+        mem_entries[i].base            = 0x00400000;
+        mem_entries[i].end_addr        = 0x007FFFFF;
+        mem_entries[i].mem_block_read  = NULL;
+        mem_entries[i].mem_block_write = NULL;
+        mem_entries[i].RW              = false;
+        mem_entries[i].should_free     = false;
+        mem_entries[i].write_callback  = NULL;
+        mem_entries[i].read_callback   = NULL;
+        mem_entries[i].set = true;
+        ++i;
+    }
+
+    mem_entries[i].base            = 0x00800000;
+    mem_entries[i].end_addr        = 0x03EFFFFF;
+    mem_entries[i].mem_block_read  = NULL;
+    mem_entries[i].mem_block_write = NULL;
+    mem_entries[i].RW              = false;
+    mem_entries[i].should_free     = false;
+    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].read_callback   = NULL;
+    mem_entries[i].set = true;
+    ++i;
+
+    mem_entries[i].base            = 0x03F00000;
+    mem_entries[i].end_addr        = 0x03F00003;
+    mem_entries[i].mem_block_read  = &RDRAM_CONFIG_REG;
+    mem_entries[i].mem_block_write = &RDRAM_CONFIG_REG;
+    mem_entries[i].RW              = true;
+    mem_entries[i].should_free     = false;
+    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].read_callback   = NULL;
+    mem_entries[i].set = true;
+    ++i;
+
+    mem_entries[i].base            = 0x03F00004;
+    mem_entries[i].end_addr        = 0x03F00007;
+    mem_entries[i].mem_block_read  = &RDRAM_DEVICE_ID_REG;
+    mem_entries[i].mem_block_write = &RDRAM_DEVICE_ID_REG;
+    mem_entries[i].RW              = true;
+    mem_entries[i].should_free     = false;
+    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].read_callback   = NULL;
+    mem_entries[i].set = true;
+    ++i;
+
+    mem_entries[i].base            = 0x03F00008;
+    mem_entries[i].end_addr        = 0x03F0000B;
+    mem_entries[i].mem_block_read  = &RDRAM_DELAY_REG;
+    mem_entries[i].mem_block_write = &RDRAM_DELAY_REG;
+    mem_entries[i].RW              = true;
+    mem_entries[i].should_free     = false;
+    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].read_callback   = NULL;
+    mem_entries[i].set = true;
+    ++i;
+
+    mem_entries[i].base            = 0x03F0000C;
+    mem_entries[i].end_addr        = 0x03F0000F;
+    mem_entries[i].mem_block_read  = &RDRAM_MODE_REG;
+    mem_entries[i].mem_block_write = &RDRAM_MODE_REG;
+    mem_entries[i].RW              = true;
+    mem_entries[i].should_free     = false;
+    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].read_callback   = NULL;
+    mem_entries[i].set = true;
+    ++i;
+
+    mem_entries[i].base            = 0x03F00010;
+    mem_entries[i].end_addr        = 0x03F00013;
+    mem_entries[i].mem_block_read  = &RDRAM_REF_INTERVAL_REG;
+    mem_entries[i].mem_block_write = &RDRAM_REF_INTERVAL_REG;
+    mem_entries[i].RW              = true;
+    mem_entries[i].should_free     = false;
+    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].read_callback   = NULL;
+    mem_entries[i].set = true;
+    ++i;
+
+    mem_entries[i].base            = 0x03F00014;
+    mem_entries[i].end_addr        = 0x03F00017;
+    mem_entries[i].mem_block_read  = &RDRAM_REF_ROW_REG;
+    mem_entries[i].mem_block_write = &RDRAM_REF_ROW_REG;
+    mem_entries[i].RW              = true;
+    mem_entries[i].should_free     = false;
+    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].read_callback   = NULL;
+    mem_entries[i].set = true;
+    ++i;
+
+    mem_entries[i].base            = 0x03F00018;
+    mem_entries[i].end_addr        = 0x03F0001B;
+    mem_entries[i].mem_block_read  = &RDRAM_RAS_INTERVAL_REG;
+    mem_entries[i].mem_block_write = &RDRAM_RAS_INTERVAL_REG;
+    mem_entries[i].RW              = true;
+    mem_entries[i].should_free     = false;
+    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].read_callback   = NULL;
+    mem_entries[i].set = true;
+    ++i;
+
+    mem_entries[i].base            = 0x03F0001C;
+    mem_entries[i].end_addr        = 0x03F0001F;
+    mem_entries[i].mem_block_read  = &RDRAM_MIN_INTERVAL_REG;
+    mem_entries[i].mem_block_write = &RDRAM_MIN_INTERVAL_REG;
+    mem_entries[i].RW              = true;
+    mem_entries[i].should_free     = false;
+    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].read_callback   = NULL;
+    mem_entries[i].set = true;
+    ++i;
+
+    mem_entries[i].base            = 0x03F00020;
+    mem_entries[i].end_addr        = 0x03F00023;
+    mem_entries[i].mem_block_read  = &RDRAM_ADDR_SELECT_REG;
+    mem_entries[i].mem_block_write = &RDRAM_ADDR_SELECT_REG;
+    mem_entries[i].RW              = true;
+    mem_entries[i].should_free     = false;
+    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].read_callback   = NULL;
+    mem_entries[i].set = true;
+    ++i;
+
+    mem_entries[i].base            = 0x03F00024;
+    mem_entries[i].end_addr        = 0x03F00027;
+    mem_entries[i].mem_block_read  = &RDRAM_DEVICE_MANUF_REG;
+    mem_entries[i].mem_block_write = &RDRAM_DEVICE_MANUF_REG;
+    mem_entries[i].RW              = true;
+    mem_entries[i].should_free     = false;
+    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].read_callback   = NULL;
+    mem_entries[i].set = true;
+    ++i;
+
     SP_DMEM_RW = malloc(0x1000);
     mem_entries[i].base            = 0x04000000;
     mem_entries[i].end_addr        = 0x04000FFF;
@@ -705,8 +840,11 @@ void write_uint8(uint8_t value, uint32_t addr)
     size_t index;
     if (GetFinalTranslation(addr, &entry, &index, true) != 0) return;
 
-    ((uint8_t*)entry->mem_block_write)[index] = value;
-    if (entry->write_callback) entry->write_callback(value, addr);
+    if (entry->mem_block_write)
+    {
+        ((uint8_t*)entry->mem_block_write)[index] = value;
+        if (entry->write_callback) entry->write_callback(value, addr);
+    }
 }
 
 uint8_t read_uint8(uint32_t addr)
@@ -715,8 +853,13 @@ uint8_t read_uint8(uint32_t addr)
     size_t index;
     if (GetFinalTranslation(addr, &entry, &index, false) != 0) return 0;
     
-    if (entry->read_callback) entry->read_callback(addr);
-    return ((uint8_t*)entry->mem_block_read)[index];
+    if (entry->mem_block_read)
+    {
+        if (entry->read_callback) entry->read_callback(addr);
+        return ((uint8_t*)entry->mem_block_read)[index];
+    }
+    
+    return 0;
 }
 
 void write_uint16(uint16_t value, uint32_t addr)
@@ -725,8 +868,11 @@ void write_uint16(uint16_t value, uint32_t addr)
     size_t index;
     if (GetFinalTranslation(addr, &entry, &index, true) != 0) return;
 
-    *(uint16_t*)(((uint8_t*)entry->mem_block_write) + index) = bswap_16(value);
-    if (entry->write_callback) entry->write_callback(value, addr);
+    if (entry->mem_block_write)
+    {
+        *(uint16_t*)(((uint8_t*)entry->mem_block_write) + index) = bswap_16(value);
+        if (entry->write_callback) entry->write_callback(value, addr);
+    }
 }
 
 uint16_t read_uint16(uint32_t addr)
@@ -735,8 +881,13 @@ uint16_t read_uint16(uint32_t addr)
     size_t index;
     if (GetFinalTranslation(addr, &entry, &index, false) != 0) return 0;
 
-    if (entry->read_callback) entry->read_callback(addr);
-    return bswap_16(*(uint16_t*)(((uint8_t*)entry->mem_block_read) + index));
+    if (entry->mem_block_read)
+    {
+        if (entry->read_callback) entry->read_callback(addr);
+        return bswap_16(*(uint16_t*)(((uint8_t*)entry->mem_block_read) + index));
+    }
+
+    return 0;
 }
 
 void write_uint32(uint32_t value, uint32_t addr)
@@ -745,8 +896,11 @@ void write_uint32(uint32_t value, uint32_t addr)
     size_t index;
     if (GetFinalTranslation(addr, &entry, &index, true) != 0) return;
 
-    *(uint32_t*)(((uint8_t*)entry->mem_block_write) + index) = bswap_32(value);
-    if (entry->write_callback) entry->write_callback(value, addr);
+    if (entry->mem_block_write)
+    {
+        *(uint32_t*)(((uint8_t*)entry->mem_block_write) + index) = bswap_32(value);
+        if (entry->write_callback) entry->write_callback(value, addr);
+    }
 }
 
 uint32_t read_uint32(uint32_t addr)
@@ -755,8 +909,13 @@ uint32_t read_uint32(uint32_t addr)
     size_t index;
     if (GetFinalTranslation(addr, &entry, &index, false) != 0) return 0;
 
-    if (entry->read_callback) entry->read_callback(addr);
-    return bswap_32(*(uint32_t*)(((uint8_t*)entry->mem_block_read) + index));
+    if (entry->mem_block_read)
+    {
+        if (entry->read_callback) entry->read_callback(addr);
+        return bswap_32(*(uint32_t*)(((uint8_t*)entry->mem_block_read) + index));
+    }
+
+    return 0;
 }
 
 void write_uint64(uint64_t value, uint32_t addr)
@@ -765,8 +924,11 @@ void write_uint64(uint64_t value, uint32_t addr)
     size_t index;
     if (GetFinalTranslation(addr, &entry, &index, true) != 0) return;
 
-    *(uint64_t*)(((uint8_t*)entry->mem_block_write) + index) = bswap_64(value);
-    if (entry->write_callback) entry->write_callback(value, addr);
+    if (entry->mem_block_write)
+    {
+        *(uint64_t*)(((uint8_t*)entry->mem_block_write) + index) = bswap_64(value);
+        if (entry->write_callback) entry->write_callback(value, addr);
+    }
 }
 
 uint64_t read_uint64(uint32_t addr)
@@ -775,8 +937,13 @@ uint64_t read_uint64(uint32_t addr)
     size_t index;
     if (GetFinalTranslation(addr, &entry, &index, false) != 0) return 0;
 
-    if (entry->read_callback) entry->read_callback(addr);
-    return bswap_64(*(uint64_t*)(((uint8_t*)entry->mem_block_read) + index));
+    if (entry->mem_block_read)
+    {
+        if (entry->read_callback) entry->read_callback(addr);
+        return bswap_64(*(uint64_t*)(((uint8_t*)entry->mem_block_read) + index));
+    }
+
+    return 0;
 }
 
 void memory_memcpy(uint32_t dest, uint32_t source, size_t length)

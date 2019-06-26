@@ -3,6 +3,7 @@
 #include "common.h"
 
 #define SCANBUFFER_HEIGHT 480
+#define MAX_WIDTH 640
 
 __attribute__((__always_inline__)) static inline float get_float_value_from_frmt(uint32_t integer, uint32_t decimal, float decimal_max)
 {
@@ -24,6 +25,16 @@ __attribute__((__always_inline__)) static inline float get_five_point_ten(uint16
     return get_float_value_from_frmt(value >> 10, value & 0x3FF, 1024.0f);
 }
 
+__attribute__((__always_inline__)) static inline uint32_t get_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+    if (curr_colorimage.image_size == BPP_32)
+        return (r << 24) | (g << 16) | (b << 8) | a;
+    else if (curr_colorimage.image_size == BPP_16)
+        return (((r & 0b11111) << 11) | ((g & 0b11111) << 6) | ((b & 0b11111) << 1) | (a > 0)) 
+            | ((((r & 0b11111) << 11) | ((g & 0b11111) << 6) | ((b & 0b11111) << 1) | (a > 0)) << 16);
+    return 0;
+}
+
 __attribute__((__always_inline__)) static inline void set_pixel(uint32_t x, uint32_t y, uint32_t packed_color, uint32_t SX1, uint32_t SY1, uint32_t SX2, uint32_t SY2)
 {
     if ((x < SX1 || y < SY1) || (x > SX2 || y > SY2)) return;
@@ -35,7 +46,7 @@ __attribute__((__always_inline__)) static inline void set_pixel(uint32_t x, uint
     framebuffer[index] = bswap_32(packed_color);
 }
 
-void draw_fill_scanbuffer(uint32_t* scanbuffer)
+void draw_scanbuffer(uint32_t* scanbuffer, edgecoeff_t* edges, shadecoeff_t* shade)
 {
     uint32_t screen_x1 = (uint32_t)(scissor_border.border.XH >> 2);
     uint32_t screen_y1 = (uint32_t)(scissor_border.border.YH >> 2);
@@ -44,18 +55,134 @@ void draw_fill_scanbuffer(uint32_t* scanbuffer)
 
     if (curr_colorimage.image_format == FRMT_RGBA)
     {
+        float shd_red   = 0;
+        float shd_green = 0;
+        float shd_blue  = 0;
+        float shd_alpha = 0;
+
+        float shd_DrDx = 0;
+        float shd_DgDx = 0;
+        float shd_DbDx = 0;
+        float shd_DaDx = 0;
+
+        float shd_DrDe = 0;
+        float shd_DgDe = 0;
+        float shd_DbDe = 0;
+        float shd_DaDe = 0;
+
+        float shd_DrDy = 0;
+        float shd_DgDy = 0;
+        float shd_DbDy = 0;
+        float shd_DaDy = 0;
+
+        float shd_red_temp   = 0;
+        float shd_green_temp = 0;
+        float shd_blue_temp  = 0;
+        float shd_alpha_temp = 0;
+
+        bool is_cycles = othermodes.cycle_type == CYCLE_1 || othermodes.cycle_type == CYCLE_2;
+
+        if (shade && is_cycles)
+        {
+            shd_red   = get_float_value_from_frmt((short)shade->red,   shade->red_frac,   65535.0f);
+            shd_green = get_float_value_from_frmt((short)shade->green, shade->green_frac, 65535.0f);
+            shd_blue  = get_float_value_from_frmt((short)shade->blue,  shade->blue_frac,  65535.0f);
+            shd_alpha = get_float_value_from_frmt((short)shade->blue,  shade->blue_frac,  65535.0f);
+
+            shd_DrDx = get_float_value_from_frmt((short)shade->DrDx, shade->DrDx_frac, 65535.0f);
+            shd_DgDx = get_float_value_from_frmt((short)shade->DgDx, shade->DgDx_frac, 65535.0f);
+            shd_DbDx = get_float_value_from_frmt((short)shade->DbDx, shade->DbDx_frac, 65535.0f);
+            shd_DaDx = get_float_value_from_frmt((short)shade->DaDx, shade->DaDx_frac, 65535.0f);
+
+            shd_DrDe = get_float_value_from_frmt((short)shade->DrDe, shade->DrDe_frac, 65535.0f);
+            shd_DgDe = get_float_value_from_frmt((short)shade->DgDe, shade->DgDe_frac, 65535.0f);
+            shd_DbDe = get_float_value_from_frmt((short)shade->DbDe, shade->DbDe_frac, 65535.0f);
+            shd_DaDe = get_float_value_from_frmt((short)shade->DaDe, shade->DaDe_frac, 65535.0f);
+
+            shd_DrDy = get_float_value_from_frmt((short)shade->DrDy, shade->DrDy_frac, 65535.0f);
+            shd_DgDy = get_float_value_from_frmt((short)shade->DgDy, shade->DgDy_frac, 65535.0f);
+            shd_DbDy = get_float_value_from_frmt((short)shade->DbDy, shade->DbDy_frac, 65535.0f);
+            shd_DaDy = get_float_value_from_frmt((short)shade->DaDy, shade->DaDy_frac, 65535.0f);
+
+            /*
+            printf("red:  %f green: %f blue: %f alpha: %f\n", shd_red, shd_green, shd_blue, shd_alpha);
+            printf("DrDx: %f DgDx:  %f DbDx: %f DaDx:  %f\n", shd_DrDx, shd_DgDx, shd_DbDx, shd_DaDx);
+            printf("DrDe: %f DgDe:  %f DbDe: %f DaDe:  %f\n", shd_DrDe, shd_DgDe, shd_DbDe, shd_DaDe);
+            printf("DrDy: %f DgDy:  %f DbDy: %f DaDy:  %f\n", shd_DrDy, shd_DgDy, shd_DbDy, shd_DaDy);
+            */
+        }
+
         for (size_t y = screen_y1; y < screen_y2; ++y)
         {
             uint32_t xmin = scanbuffer[(y * 2)    ];
             uint32_t xmax = scanbuffer[(y * 2) + 1];
-            
+
+            if (shade && is_cycles && xmax != 0)
+            {
+                shd_red   += shd_DrDy;
+                shd_green += shd_DgDy;
+                shd_blue  += shd_DbDy;
+                shd_alpha += shd_DaDy;
+
+                shd_red_temp   = shd_red;
+                shd_green_temp = shd_green;
+                shd_blue_temp  = shd_blue;
+                shd_alpha_temp = shd_alpha;
+            }
+
             for (size_t x = xmin; x < xmax; ++x)
-                set_pixel(x, y, fill_color, screen_x1, screen_y1, screen_x2, screen_y2);
+            {
+                if (xmax == 0) break;
+                uint32_t color = 0;
+                if (othermodes.cycle_type == CYCLE_FILL)
+                    color = fill_color;
+                else if (is_cycles)
+                {
+                    if (shade)
+                    {
+                        bool edge_cond = false;
+                        if      (edges->lft == 0) edge_cond = (x == xmax-1);
+                        else if (edges->lft == 1) edge_cond = (x == xmin);
+
+                        if (edge_cond && y < edges->YM >> 2)
+                        {
+                            shd_red_temp   += shd_DrDe;
+                            shd_green_temp += shd_DgDe;
+                            shd_blue_temp  += shd_DbDe;
+                            shd_alpha_temp += shd_DaDe;
+
+                            shd_red   += shd_DrDe;
+                            shd_green += shd_DgDe;
+                            shd_blue  += shd_DbDe;
+                            shd_alpha += shd_DaDe;
+                        }
+
+                        shd_red   += shd_DrDx;
+                        shd_green += shd_DgDx;
+                        shd_blue  += shd_DbDx;
+                        shd_alpha += shd_DaDx;
+
+                        //printf("%f %f %f %f\n", shd_red, shd_green, shd_blue, shd_alpha);
+
+                        color = get_color((uint8_t)(shd_red), (uint8_t)(shd_green), (uint8_t)(shd_blue), (uint8_t)(shd_alpha));
+                    }
+                }
+                
+                set_pixel(x, y, color, screen_x1, screen_y1, screen_x2, screen_y2);
+            }
+
+            if (shade && is_cycles && xmax != 0)
+            {
+                shd_red   = shd_red_temp;
+                shd_green = shd_green_temp;
+                shd_blue  = shd_blue_temp;
+                shd_alpha = shd_alpha_temp;
+            }
         }
     }
     else
     {
-        puts("Fill drawing Scanbuffers isn't supported in any other mode other than RGBA currently.");
+        puts("Drawing Scanbuffers isn't supported in any other mode other than RGBA currently.");
     }
 }
 
@@ -88,9 +215,12 @@ void draw_triangle(edgecoeff_t* edges, shadecoeff_t* shade, texcoeff_t* texture,
     uint32_t tri_scanbuffer[SCANBUFFER_HEIGHT * 2];
     memset(tri_scanbuffer, 0, (SCANBUFFER_HEIGHT * 2) * sizeof(uint32_t));
 
+    rgbacolor_t shade_edge_table[MAX_WIDTH][SCANBUFFER_HEIGHT];
+    memset(&shade_edge_table, 0, sizeof(shade_edge_table));
+
     scan_convert_triangle(tri_scanbuffer, edges);
 
-    draw_fill_scanbuffer(tri_scanbuffer);
+    draw_scanbuffer(tri_scanbuffer, edges, shade);
 }
 
 void fill_rect(rect_t* rect)
@@ -109,5 +239,5 @@ void fill_rect(rect_t* rect)
         rect_scanbuffer[(y * 2) + 1] = rect_x2;
     }
 
-    draw_fill_scanbuffer(rect_scanbuffer);
+    draw_scanbuffer(rect_scanbuffer, NULL, NULL);
 }

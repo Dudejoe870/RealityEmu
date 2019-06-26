@@ -33,12 +33,13 @@
 #define INST_COP(x)    ((x & INST_COP_MSK)    >> INST_COP_SHIFT)
 
 bool is_branching = false;
+
 uint32_t curr_target = 0;
 
 uint8_t  curr_inst_cycles = 0;
-uint64_t cycles         = 0;
-uint64_t all_cycles      = 0;
-uint32_t vi_cycle_count = 0;
+uint64_t cycles           = 0;
+uint64_t all_cycles       = 0;
+uint32_t vi_cycle_count   = 0;
 
 __attribute__((__always_inline__)) static inline void undefined_inst_error(uint32_t value)
 {
@@ -51,9 +52,9 @@ __attribute__((__always_inline__)) static inline void ADD_reg(uint8_t reg1, uint
     write_GPR((long)((uint32_t)read_GPR(reg1) + (uint32_t)read_GPR(reg2)), dst);
 }
 
-__attribute__((__always_inline__)) static inline void ADD_imm(uint8_t reg, uint16_t Imm, uint8_t dst)
+__attribute__((__always_inline__)) static inline void ADD_imm(uint8_t reg, uint16_t imm, uint8_t dst)
 {
-    write_GPR((long)((uint32_t)read_GPR(reg) + (short)Imm), dst);
+    write_GPR((long)((uint32_t)read_GPR(reg) + (short)imm), dst);
 }
 
 __attribute__((__always_inline__)) static inline void SUB_reg(uint8_t reg1, uint8_t reg2, uint8_t dst)
@@ -142,9 +143,9 @@ __attribute__((__always_inline__)) static inline void DADD_reg(uint8_t reg1, uin
     write_GPR(read_GPR(reg1) + read_GPR(reg2), dst);
 }
 
-__attribute__((__always_inline__)) static inline void DADD_imm(uint8_t reg1, uint16_t Imm, uint8_t dst)
+__attribute__((__always_inline__)) static inline void DADD_imm(uint8_t reg1, uint16_t imm, uint8_t dst)
 {
-    write_GPR(read_GPR(reg1) + (short)Imm, dst);
+    write_GPR(read_GPR(reg1) + (short)imm, dst);
 }
 
 __attribute__((__always_inline__)) static inline void DSUB_reg(uint8_t reg1, uint8_t reg2, uint8_t dst)
@@ -231,7 +232,7 @@ __attribute__((__always_inline__)) static inline void DSRA_reg(uint8_t reg1, uin
     write_GPR((long)read_GPR(reg1) >> (read_GPR(reg2) & 0x1F), dst);
 }
 
-__attribute__((__always_inline__)) static inline void DSRLImm(uint8_t reg, uint8_t dst, uint8_t sa)
+__attribute__((__always_inline__)) static inline void DSRL_imm(uint8_t reg, uint8_t dst, uint8_t sa)
 {
     write_GPR(read_GPR(reg) >> sa, dst);
 }
@@ -246,9 +247,9 @@ __attribute__((__always_inline__)) static inline void AND_reg(uint8_t reg1, uint
     write_GPR((long)((uint32_t)read_GPR(reg1) & (uint32_t)read_GPR(reg2)), dst);
 }
 
-__attribute__((__always_inline__)) static inline void AND_imm(uint8_t reg, uint16_t Imm, uint8_t dst)
+__attribute__((__always_inline__)) static inline void AND_imm(uint8_t reg, uint16_t imm, uint8_t dst)
 {
-    write_GPR((long)((uint32_t)read_GPR(reg) & Imm), dst);
+    write_GPR((long)((uint32_t)read_GPR(reg) & imm), dst);
 }
 
 __attribute__((__always_inline__)) static inline void OR_reg(uint8_t reg1, uint8_t reg2, uint8_t dst)
@@ -256,9 +257,9 @@ __attribute__((__always_inline__)) static inline void OR_reg(uint8_t reg1, uint8
     write_GPR((long)((uint32_t)read_GPR(reg1) | (uint32_t)read_GPR(reg2)), dst);
 }
 
-__attribute__((__always_inline__)) static inline void OR_imm(uint8_t reg, uint16_t Imm, uint8_t dst)
+__attribute__((__always_inline__)) static inline void OR_imm(uint8_t reg, uint16_t imm, uint8_t dst)
 {
-    write_GPR((long)((uint32_t)read_GPR(reg) | Imm), dst);
+    write_GPR((long)((uint32_t)read_GPR(reg) | imm), dst);
 }
 
 __attribute__((__always_inline__)) static inline void XOR_reg(uint8_t reg1, uint8_t reg2, uint8_t dst)
@@ -266,9 +267,9 @@ __attribute__((__always_inline__)) static inline void XOR_reg(uint8_t reg1, uint
     write_GPR((long)((uint32_t)read_GPR(reg1) ^ (uint32_t)read_GPR(reg2)), dst);
 }
 
-__attribute__((__always_inline__)) static inline void XOR_imm(uint8_t reg, uint16_t Imm, uint8_t dst)
+__attribute__((__always_inline__)) static inline void XOR_imm(uint8_t reg, uint16_t imm, uint8_t dst)
 {
-    write_GPR((long)((uint32_t)read_GPR(reg) ^ Imm), dst);
+    write_GPR((long)((uint32_t)read_GPR(reg) ^ imm), dst);
 }
 
 __attribute__((__always_inline__)) static inline void NOR_reg(uint8_t reg1, uint8_t reg2, uint8_t dst)
@@ -281,15 +282,15 @@ __attribute__((__always_inline__)) static inline void SET_cond(uint8_t dst, bool
     write_GPR((uint32_t)Cond, dst);
 }
 
-__attribute__((__always_inline__)) static inline void BRANCH_cond(uint16_t Imm, bool Cond)
+__attribute__((__always_inline__)) static inline void BRANCH_cond(uint16_t imm, bool Cond)
 {
     is_branching = Cond;
-    if (Cond) curr_target = ((uint32_t)regs.PC.value + 4) + (int)(((short)Imm) << 2);
+    if (Cond) curr_target = ((uint32_t)regs.PC.value + 4) + (int)(((short)imm) << 2);
 }
 
-__attribute__((__always_inline__)) static inline void BRANCH_cond_likely(uint16_t Imm, bool Cond)
+__attribute__((__always_inline__)) static inline void BRANCH_cond_likely(uint16_t imm, bool Cond)
 {
-    BRANCH_cond(Imm, Cond);
+    BRANCH_cond(imm, Cond);
     if (!Cond) advance_PC();
 }
 
@@ -492,7 +493,7 @@ __attribute__((__always_inline__)) static inline void DSRA32(uint32_t value)
 
 __attribute__((__always_inline__)) static inline void DSRL(uint32_t value)
 {
-    DSRLImm(INST_RT(value), INST_RD(value), INST_SA(value));
+    DSRL_imm(INST_RT(value), INST_RD(value), INST_SA(value));
     advance_PC();
 }
 
@@ -504,7 +505,7 @@ __attribute__((__always_inline__)) static inline void DSRLV(uint32_t value)
 
 __attribute__((__always_inline__)) static inline void DSRL32(uint32_t value)
 {
-    DSRLImm(INST_RT(value), INST_RD(value), INST_SA(value) + 32);
+    DSRL_imm(INST_RT(value), INST_RD(value), INST_SA(value) + 32);
     advance_PC();
 }
 
