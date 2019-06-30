@@ -140,21 +140,23 @@ void draw_scanbuffer(uint32_t* scanbuffer, edgecoeff_t* edges, shadecoeff_t* sha
                 {
                     if (shade)
                     {
+                        // this isn't how you do this at all, and this really needs fixing (produces wildly incorrect results thus is disabled for now)
+                        // other than this, shading seems to work fine, but needs this to look correct at all.
                         bool edge_cond = false;
                         if      (edges->lft == 0) edge_cond = (x == xmax-1);
                         else if (edges->lft == 1) edge_cond = (x == xmin);
 
                         if (edge_cond && y < edges->YM >> 2)
                         {
-                            shd_red_temp   += shd_DrDe;
-                            shd_green_temp += shd_DgDe;
-                            shd_blue_temp  += shd_DbDe;
-                            shd_alpha_temp += shd_DaDe;
+                            //shd_red_temp   += shd_DrDe;
+                            //shd_green_temp += shd_DgDe;
+                            //shd_blue_temp  += shd_DbDe;
+                            //shd_alpha_temp += shd_DaDe;
 
-                            shd_red   += shd_DrDe;
-                            shd_green += shd_DgDe;
-                            shd_blue  += shd_DbDe;
-                            shd_alpha += shd_DaDe;
+                            //shd_red   += shd_DrDe;
+                            //shd_green += shd_DgDe;
+                            //shd_blue  += shd_DbDe;
+                            //shd_alpha += shd_DaDe;
                         }
 
                         shd_red   += shd_DrDx;

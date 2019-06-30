@@ -32,6 +32,11 @@
 #define INST_TARGET(x) ((x & INST_TARGET_MSK) >> INST_TARGET_SHIFT)
 #define INST_COP(x)    ((x & INST_COP_MSK)    >> INST_COP_SHIFT)
 
+#define INST_FMT(x) INST_RS(x)
+#define INST_FT(x) INST_RT(x)
+#define INST_FS(x) INST_RD(x)
+#define INST_FD(x) INST_SA(x)
+
 bool is_branching = false;
 
 uint32_t curr_target = 0;
@@ -219,7 +224,7 @@ __attribute__((__always_inline__)) static inline void DSLL_imm(uint8_t reg, uint
 
 __attribute__((__always_inline__)) static inline void DSLL_reg(uint8_t reg1, uint8_t reg2, uint8_t dst)
 {
-    write_GPR(read_GPR(reg1) << (read_GPR(reg2) & 0x1F), dst);
+    write_GPR(read_GPR(reg1) << (read_GPR(reg2) & 0x3F), dst);
 }
 
 __attribute__((__always_inline__)) static inline void DSRA_imm(uint8_t reg, uint8_t dst, uint8_t sa)
@@ -229,7 +234,7 @@ __attribute__((__always_inline__)) static inline void DSRA_imm(uint8_t reg, uint
 
 __attribute__((__always_inline__)) static inline void DSRA_reg(uint8_t reg1, uint8_t reg2, uint8_t dst)
 {
-    write_GPR((long)read_GPR(reg1) >> (read_GPR(reg2) & 0x1F), dst);
+    write_GPR((long)read_GPR(reg1) >> (read_GPR(reg2) & 0x3F), dst);
 }
 
 __attribute__((__always_inline__)) static inline void DSRL_imm(uint8_t reg, uint8_t dst, uint8_t sa)
@@ -239,7 +244,7 @@ __attribute__((__always_inline__)) static inline void DSRL_imm(uint8_t reg, uint
 
 __attribute__((__always_inline__)) static inline void DSRL_reg(uint8_t reg1, uint8_t reg2, uint8_t dst)
 {
-    write_GPR(read_GPR(reg1) >> (read_GPR(reg2) & 0x1F), dst);
+    write_GPR(read_GPR(reg1) >> (read_GPR(reg2) & 0x3F), dst);
 }
 
 __attribute__((__always_inline__)) static inline void AND_reg(uint8_t reg1, uint8_t reg2, uint8_t dst)
@@ -325,7 +330,7 @@ void interp_step(void)
     uint32_t inst = bswap_32(*(uint32_t*)get_real_memory_loc((uint32_t)regs.PC.value));
     opcode_t op   = opcode_table[INST_OP(inst)];
 
-    if (op.interpret == NULL && inst != 0) 
+    if (op.interpret == NULL) 
     {
         undefined_inst_error(inst);
         return;
@@ -352,10 +357,10 @@ void interp_step(void)
     }
 
     curr_inst_cycles = 1;
-    if (inst != 0) op.interpret(inst);
-    else advance_PC();
-    cycles += curr_inst_cycles;
-    all_cycles += curr_inst_cycles;
+    op.interpret(inst);
+
+    cycles         += curr_inst_cycles;
+    all_cycles     += curr_inst_cycles;
     vi_cycle_count += curr_inst_cycles;
 
     regs.COP0[COP0_COUNT].value = (uint32_t)(cycles >> 1);
@@ -1084,6 +1089,42 @@ void COP0(uint32_t value)
     undefined_inst_error(value);
 }
 
+__attribute__((__always_inline__)) static inline void ABS_fmt(uint32_t value)
+{
+    uint64_t fs = read_FPR(INST_FS(value));
+    uint64_t fd = 0;
+    if (INST_FMT(value) == 16) // Float
+    {
+        float float_fs = *(float*)&fs;
+
+        if (isnan(float_fs))
+        {
+            // Invalid Operation
+        }
+
+        float_fs = fabsf(float_fs);
+        fd = *(uint32_t*)&float_fs;
+    }
+    else if (INST_FMT(value) == 17) // Double
+    {
+        double double_fs = *(double*)&fs;
+
+        if (isnan(double_fs))
+        {
+            // Invalid Operation
+        }
+
+        double_fs = fabsf(double_fs);
+        fd = *(uint64_t*)&double_fs;
+    }
+    else
+        undefined_inst_error(value);
+    
+    write_FPR(fd, INST_FD(value));
+
+    advance_PC();
+}
+
 __attribute__((__always_inline__)) static inline void CFC1(uint32_t value)
 {
     if (INST_RD(value) == 31 || INST_RD(value) == 0)
@@ -1110,17 +1151,66 @@ __attribute__((__always_inline__)) static inline void CTC1(uint32_t value)
     advance_PC();
 }
 
+__attribute__((__always_inline__)) static inline void DMFC1(uint32_t value)
+{
+    write_GPR(read_FPR(INST_FS(value)), INST_RT(value));
+    advance_PC();
+}
+
+__attribute__((__always_inline__)) static inline void DMTC1(uint32_t value)
+{
+    write_FPR(read_GPR(INST_RT(value)), INST_FS(value));
+    advance_PC();
+}
+
+__attribute__((__always_inline__)) static inline void MFC1(uint32_t value)
+{
+    write_GPR((uint32_t)read_FPR(INST_FS(value)), INST_RT(value));
+    advance_PC();
+}
+
+__attribute__((__always_inline__)) static inline void MTC1(uint32_t value)
+{
+    write_FPR((uint32_t)read_GPR(INST_RT(value)), INST_FS(value));
+    advance_PC();
+}
+
 void COP1(uint32_t value)
 {
-    switch (INST_RS(value))
+    if (INST_FUNCT(value) == 0 && INST_SA(value) == 0)
     {
-        case 0b00010: // CFC1
-            CFC1(value);
-            return;
-        case 0b00110: // CTC1
-            CTC1(value);
-            return;
+        switch (INST_RS(value))
+        {
+            case 0b00010: // CFC1
+                CFC1(value);
+                return;
+            case 0b00110: // CTC1
+                CTC1(value);
+                return;
+            case 0b00001: // DMFC1
+                DMFC1(value);
+                return;
+            case 0b00101: // DMTC1
+                DMTC1(value);
+                return;
+            case 0b00000: // MFC1
+                MFC1(value);
+                return;
+            case 0b00100: // MTC1
+                MTC1(value);
+                return;
+        }
     }
+    else if (INST_FUNCT(value) != 0)
+    {
+        switch (INST_FUNCT(value))
+        {
+            case 0b000101: // ABS.fmt
+                ABS_fmt(value);
+                return;
+        }
+    }
+    
     undefined_inst_error(value);
 }
 

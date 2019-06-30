@@ -5,7 +5,7 @@ DIRS = src src/r4300 src/rdp
 
 CFILES = $(foreach DIR,$(DIRS),$(wildcard $(DIR)/*.c))
 COBJFILES = $(CFILES:%.c=%.o)
-CFLAGS = -Wall -O3 -Iinclude
+CFLAGS = -Wall -O3 -Iinclude -fno-strict-aliasing
 
 CC = gcc
 
