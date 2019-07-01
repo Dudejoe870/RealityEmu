@@ -1260,7 +1260,7 @@ void XORI(uint32_t value)
 
 void LB(uint32_t value)
 {
-    write_GPR((long)read_uint8((uint32_t)read_GPR(INST_RS(value)) + (short)INST_IMM(value)), INST_RT(value));
+    write_GPR((char)read_uint8((uint32_t)read_GPR(INST_RS(value)) + (short)INST_IMM(value)), INST_RT(value));
     advance_PC();
 }
 
@@ -1288,7 +1288,7 @@ void LDR(uint32_t value)
 
 void LH(uint32_t value)
 {
-    write_GPR((long)read_uint16((uint32_t)read_GPR(INST_RS(value)) + (short)INST_IMM(value)), INST_RT(value));
+    write_GPR((short)read_uint16((uint32_t)read_GPR(INST_RS(value)) + (short)INST_IMM(value)), INST_RT(value));
     advance_PC();
 }
 
@@ -1316,18 +1316,38 @@ void LUI(uint32_t value)
 
 void LW(uint32_t value)
 {
-    write_GPR((long)read_uint32((uint32_t)read_GPR(INST_RS(value)) + (short)INST_IMM(value)), INST_RT(value));
+    write_GPR((uint32_t)read_uint32((uint32_t)read_GPR(INST_RS(value)) + (short)INST_IMM(value)), INST_RT(value));
     advance_PC();
 }
 
 void LWL(uint32_t value)
 {
-    undefined_inst_error(value);
+    short    offs = (short)INST_IMM(value);
+    uint32_t addr = (uint32_t)read_GPR(INST_RS(value)) + offs;
+    uint32_t mem  = (uint32_t)read_uint32(addr);
+
+    uint16_t shift = (offs % 8) * 8;
+    uint64_t reg   = read_GPR(INST_RT(value));
+    uint64_t res   = ((int)mem) & 0xFFFFFFFF00000000;
+    res           |= ((mem << shift) | (reg & ((uint64_t)0xFFFFFFFF >> (32 - shift)))) & 0xFFFFFFFF;
+    write_GPR(res, INST_RT(value));
+
+    advance_PC();
 }
 
 void LWR(uint32_t value)
 {
-    undefined_inst_error(value);
+    short    offs = (short)INST_IMM(value);
+    uint32_t addr = (uint32_t)read_GPR(INST_RS(value)) + offs;
+    uint32_t mem  = (uint32_t)read_uint32(addr);
+
+    uint16_t shift = (offs % 8) * 8;
+    uint64_t reg   = read_GPR(INST_RT(value));
+    uint64_t res   = 0xFFFFFFFF00000000;
+    res           |= ((mem >> (24 - shift)) | (reg & ((uint64_t)0xFFFFFFFF << (shift + 8)))) & 0xFFFFFFFF;
+    write_GPR(res, INST_RT(value));
+
+    advance_PC();
 }
 
 void LWU(uint32_t value)
@@ -1404,13 +1424,13 @@ void SWR(uint32_t value)
 
 void BEQ(uint32_t value)
 {
-    BRANCH_cond(INST_IMM(value), (uint32_t)read_GPR(INST_RS(value)) == (uint32_t)read_GPR(INST_RT(value)));
+    BRANCH_cond(INST_IMM(value), (int)read_GPR(INST_RS(value)) == (int)read_GPR(INST_RT(value)));
     advance_PC();
 }
 
 void BEQL(uint32_t value)
 {
-    BRANCH_cond_likely(INST_IMM(value), (uint32_t)read_GPR(INST_RS(value)) == (uint32_t)read_GPR(INST_RT(value)));
+    BRANCH_cond_likely(INST_IMM(value), (int)read_GPR(INST_RS(value)) == (int)read_GPR(INST_RT(value)));
     advance_PC();
 }
 
