@@ -30,8 +30,20 @@ __attribute__((__always_inline__)) static inline uint32_t get_color(uint8_t r, u
     if (curr_colorimage.image_size == BPP_32)
         return (r << 24) | (g << 16) | (b << 8) | a;
     else if (curr_colorimage.image_size == BPP_16)
-        return (((r & 0b11111) << 11) | ((g & 0b11111) << 6) | ((b & 0b11111) << 1) | (a > 0)) 
-            | ((((r & 0b11111) << 11) | ((g & 0b11111) << 6) | ((b & 0b11111) << 1) | (a > 0)) << 16);
+    {
+        float _r = ((float)r / 255) * 31;
+        float _g = ((float)g / 255) * 31;
+        float _b = ((float)b / 255) * 31;
+        float _a = ((float)a / 255) * 31;
+
+        uint8_t real_r = (uint8_t)_r;
+        uint8_t real_g = (uint8_t)_g;
+        uint8_t real_b = (uint8_t)_b;
+        uint8_t real_a = (uint8_t)_a;
+        
+        return (((real_r & 0b11111) << 11) | ((real_g & 0b11111) << 6) | ((real_b & 0b11111) << 1) | (real_a > 0)) 
+            | ((((real_r & 0b11111) << 11) | ((real_g & 0b11111) << 6) | ((real_b & 0b11111) << 1) | (real_a > 0)) << 16);
+    }
     return 0;
 }
 
@@ -139,7 +151,7 @@ __attribute__((__always_inline__)) static inline void do_x_pixel_scanbuffer(size
                 if (*shd_blue  < 0) *shd_blue  = 0;
                 if (*shd_alpha < 0) *shd_alpha = 0;
 
-                color = get_color((uint8_t)(*shd_red), (uint8_t)(*shd_green), (uint8_t)(*shd_blue), (uint8_t)(*shd_alpha));
+                color = get_color((uint8_t)*shd_red, (uint8_t)*shd_green, (uint8_t)*shd_blue, (uint8_t)*shd_alpha);
             }
         }
 

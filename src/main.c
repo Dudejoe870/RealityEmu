@@ -37,6 +37,7 @@ int main(int argc, char** argv)
         { "no-expansion-pak", no_argument,       0,  0  },
         { "debug",            no_argument,       0,  0  },
         { "help",             no_argument,       0, 'h' },
+        { "nearest-neighbor", no_argument,       0,  0  },
         { 0,      0,                             0,  0  }
     };
 
@@ -48,6 +49,7 @@ int main(int argc, char** argv)
     config.region        = REG_NTSC;
     config.expansion_pak = true;
     config.debug_logging = false;
+    config.gfx_type      = GFX_LINEAR;
 
     while ((opt = getopt_long(argc, argv, ":c:r:h", long_options, &option_index)) != -1)
     {
@@ -58,6 +60,8 @@ int main(int argc, char** argv)
                     config.expansion_pak = false;
                 else if (strcmp(long_options[option_index].name, "debug") == 0)
                     config.debug_logging = true;
+                else if (strcmp(long_options[option_index].name, "nearest-neighbor") == 0)
+                    config.gfx_type = GFX_NEAREST;
                 else
                 {
                     puts("Unknown Option");
@@ -98,6 +102,7 @@ int main(int argc, char** argv)
     {
         printf("Usage: %s [Options]\n Options:\n  --cart (-c) [ROM]: Sets the ROM.\n  --region (-r) [Region (NTSC, PAL, MPAL)]: Sets the Region of the emulated Console.\n", argv[0]);
         puts("  --no-expansion-pak: Disables the Expansion Pak.\n  --debug: Enables Debug Logging.\n  --help (-h): Displays this help message.");
+        puts("  --nearest-neighbor: Turns on nearest neighbor interpolation on the framebuffer.");
         return 1;
     }
 
