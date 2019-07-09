@@ -139,7 +139,7 @@ typedef struct
     uint8_t add_A_1;
 } combinemode_t;
 
-combinemode_t curr_combine_mode;
+combinemode_t combinemode;
 
 typedef enum
 {

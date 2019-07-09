@@ -40,7 +40,7 @@ __attribute__((__always_inline__)) static inline uint32_t get_color(uint8_t r, u
         uint8_t real_g = (uint8_t)_g;
         uint8_t real_b = (uint8_t)_b;
         uint8_t real_a = (uint8_t)_a;
-        
+
         return (((real_r & 0b11111) << 11) | ((real_g & 0b11111) << 6) | ((real_b & 0b11111) << 1) | (real_a > 0)) 
             | ((((real_r & 0b11111) << 11) | ((real_g & 0b11111) << 6) | ((real_b & 0b11111) << 1) | (real_a > 0)) << 16);
     }
@@ -236,20 +236,20 @@ void draw_scanbuffer(uint32_t* scanbuffer, edgecoeff_t* edges, shadecoeff_t* sha
             }
 
             do_x_pixel_scanbuffer(y, edges->lft, xmax, xmin, 
-                                  &shd_red, &shd_green, &shd_blue, &shd_alpha, 
-                                  &shd_DrDx, &shd_DgDx, &shd_DbDx, &shd_DaDx,
-                                  &shd_DrDe, &shd_DgDe, &shd_DbDe, &shd_DaDe, shade);
+                                  &shd_red,  &shd_green, &shd_blue, &shd_alpha, 
+                                  &shd_DrDx, &shd_DgDx,  &shd_DbDx, &shd_DaDx,
+                                  &shd_DrDe, &shd_DgDe,  &shd_DbDe, &shd_DaDe, shade);
         }
     }
 }
 
-void scan_convert_line(uint32_t* scanbuffer, float xstep, uint32_t xstart, uint32_t ystart, uint32_t yend, int side)
+void scan_convert_line(uint32_t* scanbuffer, float xstep, float xstart, float ystart, float yend, int side)
 {
     float currx = xstart;
 
-    for (uint32_t y = ystart; y < yend; ++y)
+    for (float y = ystart; y < yend; ++y)
     {
-        size_t index = (y * 2) + side;
+        size_t index = ((int)y * 2) + side;
         if (index > SCANBUFFER_HEIGHT * 2) break;
         scanbuffer[index] = (uint32_t)currx;
         currx += xstep;
@@ -262,9 +262,9 @@ void scan_convert_triangle(uint32_t* scanbuffer, edgecoeff_t* edges)
     float xstep2 = get_float_value_from_frmt((short)edges->DxLDy, edges->DxLDy_frac, 65535.0f);
     float xstep3 = get_float_value_from_frmt((short)edges->DxMDy, edges->DxMDy_frac, 65535.0f);
 
-    scan_convert_line(scanbuffer, xstep1, edges->XH, edges->YH >> 2, edges->YL >> 2, (int)(1 - edges->lft));
-    scan_convert_line(scanbuffer, xstep2, edges->XL, edges->YM >> 2, edges->YL >> 2, edges->lft);
-    scan_convert_line(scanbuffer, xstep3, edges->XM, edges->YH >> 2, edges->YM >> 2, edges->lft);
+    scan_convert_line(scanbuffer, xstep1, (float)edges->XH, get_ten_point_two(edges->YH), get_ten_point_two(edges->YL), (int)(1 - edges->lft));
+    scan_convert_line(scanbuffer, xstep2, (float)edges->XL, get_ten_point_two(edges->YM), get_ten_point_two(edges->YL), edges->lft);
+    scan_convert_line(scanbuffer, xstep3, (float)edges->XM, get_ten_point_two(edges->YH), get_ten_point_two(edges->YM), edges->lft);
 }
 
 void draw_triangle(edgecoeff_t* edges, shadecoeff_t* shade, texcoeff_t* texture, zbuffercoeff_t* zbuf)
