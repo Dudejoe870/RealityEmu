@@ -103,6 +103,9 @@ __attribute__((__always_inline__)) static inline void do_x_pixel_scanbuffer(size
             color = fill_color;
         else if (is_cycles)
         {
+            rgbacolor_t shd_color;
+            memset(&shd_color, 0, sizeof(shd_color));
+
             if (shade)
             {
                 bool edge_cond = false;
@@ -151,8 +154,17 @@ __attribute__((__always_inline__)) static inline void do_x_pixel_scanbuffer(size
                 if (*shd_blue  < 0) *shd_blue  = 0;
                 if (*shd_alpha < 0) *shd_alpha = 0;
 
-                color = get_color((uint8_t)*shd_red, (uint8_t)*shd_green, (uint8_t)*shd_blue, (uint8_t)*shd_alpha);
+                shd_color.red   = (uint8_t)*shd_red;
+                shd_color.green = (uint8_t)*shd_green;
+                shd_color.blue  = (uint8_t)*shd_blue;
+                shd_color.alpha = (uint8_t)*shd_alpha;
             }
+
+            cccolorin_t colors; 
+            colors.combined    = NULL;
+            colors.shade_color = &shd_color;
+            rgbacolor_t cc_color = get_cc_color(colors, 1);
+            color = get_color(cc_color.red, cc_color.green, cc_color.blue, cc_color.alpha);
         }
 
         set_pixel(x, y, color);

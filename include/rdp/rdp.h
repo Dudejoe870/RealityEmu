@@ -249,7 +249,7 @@ othermodes_t othermodes;
 typedef struct
 {
     uint8_t red, green, blue, alpha;
-} rgbacolor_t;
+} __attribute__((__packed__)) rgbacolor_t;
 
 rgbacolor_t curr_envcolor;
 rgbacolor_t curr_blendcolor;

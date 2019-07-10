@@ -13,6 +13,7 @@
 #include "r4300/opcodetable.h"
 #include "r4300/tlb.h"
 
+#include "rdp/cc.h"
 #include "rdp/cmdtable.h"
 #include "rdp/interpreter.h"
 #include "rdp/rdp.h"

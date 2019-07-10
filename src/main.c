@@ -36,6 +36,7 @@ int main(int argc, char** argv)
         { "region",           required_argument, 0, 'r' },
         { "no-expansion-pak", no_argument,       0,  0  },
         { "debug",            no_argument,       0,  0  },
+        { "debug-cc",         no_argument,       0,  0  },
         { "help",             no_argument,       0, 'h' },
         { "nearest-neighbor", no_argument,       0,  0  },
         { 0,      0,                             0,  0  }
@@ -50,6 +51,7 @@ int main(int argc, char** argv)
     config.expansion_pak = true;
     config.debug_logging = false;
     config.gfx_type      = GFX_LINEAR;
+    config.cc_logging    = false;
 
     while ((opt = getopt_long(argc, argv, ":c:r:h", long_options, &option_index)) != -1)
     {
@@ -60,6 +62,8 @@ int main(int argc, char** argv)
                     config.expansion_pak = false;
                 else if (strcmp(long_options[option_index].name, "debug") == 0)
                     config.debug_logging = true;
+                else if (strcmp(long_options[option_index].name, "debug-cc") == 0)
+                    config.cc_logging = true;
                 else if (strcmp(long_options[option_index].name, "nearest-neighbor") == 0)
                     config.gfx_type = GFX_NEAREST;
                 else

@@ -28,6 +28,7 @@ typedef struct
 {
     bool       expansion_pak;
     bool       debug_logging;
+    bool       cc_logging;
     region_t   region;
     uint8_t    refresh_rate;
     gfx_type_t gfx_type;
