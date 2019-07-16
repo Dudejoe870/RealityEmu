@@ -201,11 +201,20 @@ void get_ccinput_val(ccinput_t in, cccolorin_t colors, rgbacolor_t* out)
             if (colors.combined)
                 memcpy(out, colors.combined, sizeof(rgbacolor_t)-sizeof(uint8_t));
             return;
+        case CC_TEXEL_0:
+            if (colors.texel0_color)
+                memcpy(out, colors.texel0_color, sizeof(rgbacolor_t)-sizeof(uint8_t));
+            return;
+        case CC_TEXEL_1:
+            if (colors.texel1_color)
+                memcpy(out, colors.texel1_color, sizeof(rgbacolor_t)-sizeof(uint8_t));
+            return;
         case CC_PRIM_COLOR:
             memcpy(out, &curr_primcolor.color, sizeof(rgbacolor_t)-sizeof(uint8_t));
             return;
         case CC_SHADE_COLOR:
-            memcpy(out, colors.shade_color, sizeof(rgbacolor_t)-sizeof(uint8_t));
+            if (colors.shade_color)
+                memcpy(out, colors.shade_color, sizeof(rgbacolor_t)-sizeof(uint8_t));
             return;
         case CC_ENV_COLOR:
             memcpy(out, &curr_envcolor, sizeof(rgbacolor_t)-sizeof(uint8_t));
@@ -214,11 +223,20 @@ void get_ccinput_val(ccinput_t in, cccolorin_t colors, rgbacolor_t* out)
             if (colors.combined)
                 out->alpha = colors.combined->alpha;
             return;
+        case CC_TEX_0_ALPHA:
+            if (colors.texel0_color)
+                out->alpha = colors.texel0_color->alpha;
+            return;
+        case CC_TEX_1_ALPHA:
+            if (colors.texel1_color)
+                out->alpha = colors.texel1_color->alpha;
+            return;
         case CC_PRIM_ALPHA:
             out->alpha = curr_primcolor.color.alpha;
             return;
         case CC_SHADED_ALPHA:
-            out->alpha = colors.shade_color->alpha;
+            if (colors.shade_color)
+                out->alpha = colors.shade_color->alpha;
             return;
         case CC_ENV_ALPHA:
             out->alpha = curr_envcolor.alpha;

@@ -5,31 +5,11 @@
 #define SCANBUFFER_HEIGHT 480
 #define MAX_WIDTH 640
 
-__attribute__((__always_inline__)) static inline float get_float_value_from_frmt(uint32_t integer, uint32_t decimal, float decimal_max)
-{
-    return ((int)integer) + ((float)decimal / decimal_max);
-}
-
-__attribute__((__always_inline__)) static inline float get_ten_point_two(uint16_t value)
-{
-    return get_float_value_from_frmt(value >> 2, value & 0x3, 3.0f);
-}
-
-__attribute__((__always_inline__)) static inline float get_ten_point_five(uint16_t value)
-{
-    return get_float_value_from_frmt(value >> 5, value & 0x1F, 31.0f);
-}
-
-__attribute__((__always_inline__)) static inline float get_five_point_ten(uint16_t value)
-{
-    return get_float_value_from_frmt(value >> 10, value & 0x3FF, 1024.0f);
-}
-
 __attribute__((__always_inline__)) static inline uint32_t get_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
-    if (curr_colorimage.image_size == BPP_32)
+    if (curr_colorimage.size == BPP_32)
         return (r << 24) | (g << 16) | (b << 8) | a;
-    else if (curr_colorimage.image_size == BPP_16)
+    else if (curr_colorimage.size == BPP_16)
     {
         float _r = ((float)r / 255) * 31;
         float _g = ((float)g / 255) * 31;
@@ -56,11 +36,67 @@ __attribute__((__always_inline__)) static inline void set_pixel(uint32_t x, uint
 
     if ((x < screen_x1 || y < screen_y1) || (x > screen_x2 || y > screen_y2)) return;
 
-    uint32_t index = x + y * (curr_colorimage.image_width+1);
-    if (curr_colorimage.image_size == BPP_16)
+    uint32_t index = x + y * (curr_colorimage.width+1);
+    if (curr_colorimage.size == BPP_16)
         index >>= 1;
-    uint32_t* framebuffer = get_real_memory_loc(curr_colorimage.image_addr);
+    uint32_t* framebuffer = get_real_memory_loc(curr_colorimage.addr);
     framebuffer[index] = bswap_32(packed_color);
+}
+
+__attribute__((__always_inline__)) static inline uint32_t process_pixel(cccolorin_t colors)
+{
+    if (othermodes.cycle_type == CYCLE_1 || othermodes.cycle_type == CYCLE_2)
+    {
+        rgbacolor_t cc_color_0;
+        if (othermodes.cycle_type == CYCLE_2)
+        {
+            cc_color_0 = get_cc_color(colors, 0);
+            colors.combined = &cc_color_0;
+        }
+
+        rgbacolor_t cc_color_1 = get_cc_color(colors, 1);
+
+        return get_color(cc_color_1.red, cc_color_1.green, cc_color_1.blue, cc_color_1.alpha);
+    }
+    else if (othermodes.cycle_type == CYCLE_COPY && colors.texel0_color)
+        return get_color(colors.texel0_color->red, colors.texel0_color->green, colors.texel0_color->blue, colors.texel0_color->alpha);
+    
+    return 0;
+}
+
+__attribute__((__always_inline__)) static inline void get_tex_coords(uint32_t* S, uint32_t* T, float float_S, float float_T, uint8_t index, bool flip)
+{
+    uint32_t temp_S = (uint32_t)float_S;
+    uint32_t temp_T = (uint32_t)float_T;
+    if (tiles[index].shift_s > 10)
+        temp_S <<= (~tiles[index].shift_s & 0x7) + 1;
+    else
+        temp_S >>= tiles[index].shift_s;
+
+    if (tiles[index].shift_t > 10)
+        temp_T <<= (~tiles[index].shift_t & 0x7) + 1;
+    else 
+        temp_T >>= tiles[index].shift_t;
+    
+    if (tiles[index].ms && (((temp_S >> tiles[index].mask_s) & 0x1) != 0)) temp_S = ~temp_S;
+    if (tiles[index].mt && (((temp_T >> tiles[index].mask_t) & 0x1) != 0)) temp_T = ~temp_T;
+
+    if (tiles[index].ms && tiles[index].mask_s != 0) temp_S &= (1 << (tiles[index].mask_s + 1)) - 1;
+    if (tiles[index].mt && tiles[index].mask_t != 0) temp_T &= (1 << (tiles[index].mask_t + 1)) - 1;
+
+    if (tiles[index].cs || tiles[index].mask_s == 0)
+    {
+        if (temp_S > tiles[index].sh)
+            temp_S = tiles[index].sh;
+    }
+
+    if (tiles[index].ct || tiles[index].mask_t == 0)
+    {
+        if (temp_T > tiles[index].th)
+            temp_T = tiles[index].th;
+    }
+    *S = flip ? temp_T : temp_S;
+    *T = flip ? temp_S : temp_T;
 }
 
 __attribute__((__always_inline__)) static inline void do_x_pixel_scanbuffer(size_t y, int lft, uint32_t xmax, uint32_t xmin, 
@@ -161,10 +197,12 @@ __attribute__((__always_inline__)) static inline void do_x_pixel_scanbuffer(size
             }
 
             cccolorin_t colors; 
-            colors.combined    = NULL;
-            colors.shade_color = &shd_color;
-            rgbacolor_t cc_color = get_cc_color(colors, 1);
-            color = get_color(cc_color.red, cc_color.green, cc_color.blue, cc_color.alpha);
+            colors.combined     = NULL;
+            colors.texel0_color = NULL;
+            colors.texel1_color = NULL;
+            colors.shade_color  = &shd_color;
+
+            color = process_pixel(colors);
         }
 
         set_pixel(x, y, color);
@@ -186,7 +224,7 @@ void draw_scanbuffer(uint32_t* scanbuffer, edgecoeff_t* edges, shadecoeff_t* sha
     uint32_t screen_y1 = (uint32_t)(scissor_border.border.YH >> 2);
     uint32_t screen_y2 = (uint32_t)(scissor_border.border.YL >> 2);
 
-    if (curr_colorimage.image_format == FRMT_RGBA)
+    if (curr_colorimage.format == FRMT_RGBA)
     {
         float shd_red   = 0;
         float shd_green = 0;
@@ -284,9 +322,6 @@ void draw_triangle(edgecoeff_t* edges, shadecoeff_t* shade, texcoeff_t* texture,
     uint32_t tri_scanbuffer[SCANBUFFER_HEIGHT * 2];
     memset(tri_scanbuffer, 0, (SCANBUFFER_HEIGHT * 2) * sizeof(uint32_t));
 
-    rgbacolor_t shade_edge_table[MAX_WIDTH][SCANBUFFER_HEIGHT];
-    memset(&shade_edge_table, 0, sizeof(shade_edge_table));
-
     scan_convert_triangle(tri_scanbuffer, edges);
 
     draw_scanbuffer(tri_scanbuffer, edges, shade);
@@ -297,7 +332,7 @@ void fill_rect(rect_t* rect)
     uint32_t rect_x1 = (uint32_t)(rect->XH >> 2);
     uint32_t rect_y1 = (uint32_t)(rect->YH >> 2);
     uint32_t rect_x2 = (uint32_t)(rect->XL >> 2) + 1;
-    uint32_t rect_y2 = (uint32_t)(rect->YL >> 2) + 1;
+    uint32_t rect_y2 = (uint32_t)(rect->YL >> 2);
 
     if (othermodes.cycle_type == CYCLE_FILL)
     {
@@ -308,5 +343,85 @@ void fill_rect(rect_t* rect)
                 set_pixel(x, y, fill_color);
             }
         }
+    }
+}
+
+void draw_tex_rect(texrect_t* tex_rect, bool flip)
+{
+    uint32_t rect_x1 = (tex_rect->rect.XH >> 2);
+    uint32_t rect_y1 = (tex_rect->rect.YH >> 2);
+    uint32_t rect_x2 = (tex_rect->rect.XL >> 2);
+    uint32_t rect_y2 = (tex_rect->rect.YL >> 2);
+
+    float S = get_ten_point_five(tex_rect->S);
+    float T = get_ten_point_five(tex_rect->T);
+
+    float DsDx = get_five_point_ten(tex_rect->DsDx);
+    float DtDy = get_five_point_ten(tex_rect->DtDy);
+
+    uint8_t index = tex_rect->tile;
+
+    uint16_t addr0 = tiles[index].addr;
+    uint16_t addr1 = (index < 7) ? tiles[index+1].addr : 0;
+
+    for (uint32_t y = rect_y1; y < rect_y2; ++y)
+    {
+        S = 0;
+        for (uint32_t x = rect_x1; x < rect_x2; ++x)
+        {
+            rgbacolor_t texel0;
+            rgbacolor_t texel1;
+            memset(&texel1, 0, sizeof(rgbacolor_t));
+
+            if (tiles[index].format == FRMT_RGBA)
+            {
+                if (tiles[index].size == BPP_32)
+                {
+                    uint32_t S0 = 0;
+                    uint32_t T0 = 0;
+
+                    get_tex_coords(&S0, &T0, S, T, index, flip);
+
+                    uint32_t S1 = 0;
+                    uint32_t T1 = 0;
+
+                    if (index < 7) get_tex_coords(&S1, &T1, S, T, index+1, flip);
+
+                    size_t tex_index0 =               (S0 + T0 * (tiles[index].sh   + 1)) * 4;
+                    size_t tex_index1 = (index < 7) ? (S1 + T1 * (tiles[index+1].sh + 1)) * 4 : 0;
+
+                    if (tex_index0 >= 4096 || tex_index1 >= 4096) return;
+
+                    texel0.red   = RDP_TMEM[addr0 + tex_index0 + 0];
+                    texel0.green = RDP_TMEM[addr0 + tex_index0 + 1];
+                    texel0.blue  = RDP_TMEM[addr0 + tex_index0 + 2];
+                    texel0.alpha = RDP_TMEM[addr0 + tex_index0 + 3];
+
+                    if (index < 7)
+                    {
+                        texel1.red   = RDP_TMEM[addr1 + tex_index1 + 0];
+                        texel1.green = RDP_TMEM[addr1 + tex_index1 + 1];
+                        texel1.blue  = RDP_TMEM[addr1 + tex_index1 + 2];
+                        texel1.alpha = RDP_TMEM[addr1 + tex_index1 + 3];
+                    }
+
+                    cccolorin_t colors;
+                    colors.combined     = NULL;
+                    colors.shade_color  = NULL;
+                    colors.texel0_color = &texel0;
+                    colors.texel1_color = &texel1;
+
+                    uint32_t color = process_pixel(colors);
+                    set_pixel(x, y, color);
+                }
+            }
+            else
+            {
+                puts("Texture formats other than RGBA are not supported currently.\n");
+                return;
+            }
+            S += DsDx;
+        }
+        T += DtDy;
     }
 }

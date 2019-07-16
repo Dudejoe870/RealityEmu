@@ -34,7 +34,9 @@ extern char* ccinput_names[];
 typedef struct
 {
     rgbacolor_t* shade_color;
-    rgbacolor_t* combined; 
+    rgbacolor_t* texel0_color;
+    rgbacolor_t* texel1_color;
+    rgbacolor_t* combined;
 } cccolorin_t;
 
 typedef struct

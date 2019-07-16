@@ -8,10 +8,10 @@ __attribute__((__always_inline__)) static inline void undefined_inst_error(uint6
     is_running = false;
 }
 
-__attribute__((__always_inline__)) static inline uint64_t get_coeff(uint8_t offset)
+__attribute__((__always_inline__)) static inline uint64_t get_coeff(uint16_t offset)
 {
     return ((bswap_32(DPC_STATUS_REG_R) & 1) > 0) 
-           ? bswap_64(((uint64_t*)SP_DMEM_RW)[bswap_32(DPC_CURRENT_REG_R & 0xFFF) + offset]) 
+           ? read_uint64(0x04000000 | (bswap_32(DPC_CURRENT_REG_R) + offset))
            : read_uint64(bswap_32(DPC_CURRENT_REG_R) + offset);
 }
 
@@ -28,7 +28,7 @@ __attribute__((__always_inline__)) static inline void set_PC(uint32_t ToSet)
 void RDP_step(void)
 {
     uint64_t inst = ((bswap_32(DPC_STATUS_REG_R) & 1) > 0) 
-                    ? bswap_64(((uint64_t*)SP_DMEM_RW)[bswap_32(DPC_CURRENT_REG_R & 0xFFF)]) 
+                    ? read_uint64(0x04000000 | bswap_32(DPC_CURRENT_REG_R))
                     : read_uint64(bswap_32(DPC_CURRENT_REG_R));
     cmd_t command = CMDtable[(inst & 0x3F00000000000000) >> 56];
 
@@ -47,16 +47,92 @@ void RDP_step(void)
 
 void cmd_SetColorImage(uint64_t value)
 {
-    curr_colorimage.image_format = (imageformat_t)((value & 0x00E0000000000000) >> 53);
-    curr_colorimage.image_size   = (bpp_t)        ((value & 0x0018000000000000) >> 51);
-    curr_colorimage.image_width  = (uint16_t)     ((value & 0x000003FF00000000) >> 32);
-    curr_colorimage.image_addr   = (uint32_t)      (value & 0x000000001FFFFFFF);
+    curr_colorimage.format = (value & 0x00E0000000000000) >> 53;
+    curr_colorimage.size   = (value & 0x0018000000000000) >> 51;
+    curr_colorimage.width  = (value & 0x000003FF00000000) >> 32;
+    curr_colorimage.addr   = (value & 0x000000001FFFFFFF);
+    add_PC(8);
+}
+
+void cmd_SetTextureImage(uint64_t value)
+{
+    curr_teximage.format = (value & 0b0000000011100000000000000000000000000000000000000000000000000000) >> 53;
+    curr_teximage.size   = (value & 0b0000000000011000000000000000000000000000000000000000000000000000) >> 51;
+    curr_teximage.width  = (value & 0b0000000000000000000000111111111100000000000000000000000000000000) >> 32;
+    curr_teximage.addr   = (value & 0b0000000000000000000000000000000000000011111111111111111111111111);
+    add_PC(8);
+}
+
+void cmd_SetTile(uint64_t value)
+{
+    uint8_t index        = (value & 0b0000000000000000000000000000000000000111000000000000000000000000) >> 24;
+    tiles[index].format  = (value & 0b0000000011100000000000000000000000000000000000000000000000000000) >> 53;
+    tiles[index].size    = (value & 0b0000000000011000000000000000000000000000000000000000000000000000) >> 51;
+    tiles[index].line    = (value & 0b0000000000000011111111100000000000000000000000000000000000000000) >> 41;
+    tiles[index].addr    = (value & 0b0000000000000000000000011111111100000000000000000000000000000000) >> 32;
+    tiles[index].palette = (value & 0b0000000000000000000000000000000000000000111100000000000000000000) >> 20;
+    tiles[index].ct      = (value & 0b0000000000000000000000000000000000000000000010000000000000000000) > 0;
+    tiles[index].mt      = (value & 0b0000000000000000000000000000000000000000000001000000000000000000) > 0;
+    tiles[index].mask_t  = (value & 0b0000000000000000000000000000000000000000000000111100000000000000) >> 14;
+    tiles[index].shift_t = (value & 0b0000000000000000000000000000000000000000000000000011110000000000) >> 10;
+    tiles[index].cs      = (value & 0b0000000000000000000000000000000000000000000000000000001000000000) > 0;
+    tiles[index].ms      = (value & 0b0000000000000000000000000000000000000000000000000000000100000000) > 0;
+    tiles[index].mask_s  = (value & 0b0000000000000000000000000000000000000000000000000000000011110000) >> 4;
+    tiles[index].shift_s = (value & 0b0000000000000000000000000000000000000000000000000000000000001111);
+    add_PC(8);
+}
+
+void cmd_LoadTile(uint64_t value)
+{
+    float SL      = get_ten_point_two((value & 0x00FFF00000000000) >> 44);
+    float TL      = get_ten_point_two((value & 0x00000FFF00000000) >> 32);
+    uint8_t index =                   (value & 0x0000000007000000) >> 24;
+    float SH      = get_ten_point_two((value & 0x0000000000FFF000) >> 12);
+    float TH      = get_ten_point_two((value & 0x0000000000000FFF));
+
+    uint16_t tmem_addr = tiles[index].addr;
+    uint32_t base_addr = curr_teximage.addr;
+
+    uint8_t  bytes_per_pixel = 0;
+    switch (curr_teximage.size)
+    {
+        case BPP_4:
+            SL /= 2;
+            TL /= 2;
+
+            SH /= 2;
+            TH /= 2;
+            bytes_per_pixel = 1;
+            break;
+        case BPP_8:
+            bytes_per_pixel = 1;
+            break;
+        case BPP_16:
+            bytes_per_pixel = 2;
+            break;
+        case BPP_32:
+            bytes_per_pixel = 4;
+            break;
+    }
+
+    tiles[index].sh = SH;
+    tiles[index].th = TH;
+
+    uint32_t src = base_addr + (((uint32_t)SL + ((uint32_t)TL * (uint32_t)(SH + 1))) * bytes_per_pixel);
+    size_t   len = ((uint32_t)(SH + 1) * (uint32_t)(TH + 1)) * bytes_per_pixel;
+
+    void* real_src_addr = get_real_memory_loc(src);
+    void* real_dst_addr = &RDP_TMEM[tmem_addr * 8];
+
+    memcpy(real_dst_addr, real_src_addr, len);
+
     add_PC(8);
 }
 
 void cmd_FillRectangle(uint64_t value)
 {
     rect_t rect;
+
     rect.XL = (uint16_t)((value & 0x00FFF00000000000) >> 44);
     rect.YL = (uint16_t)((value & 0x00000FFF00000000) >> 32);
     rect.XH = (uint16_t)((value & 0x0000000000FFF000) >> 12);
@@ -64,6 +140,30 @@ void cmd_FillRectangle(uint64_t value)
 
     fill_rect(&rect);
     add_PC(8);
+}
+
+void cmd_TextureRectangle(uint64_t value)
+{
+    texrect_t tex_rect;
+
+    tex_rect.rect.XL = (value & 0x00FFF00000000000) >> 44;
+    tex_rect.rect.YL = (value & 0x00000FFF00000000) >> 32;
+    tex_rect.tile    = (value & 0x0000000007000000) >> 24;
+    tex_rect.rect.XH = (value & 0x0000000000FFF000) >> 12;
+    tex_rect.rect.YH = (value & 0x0000000000000FFF);
+    
+    uint64_t tex_coeff = get_coeff(8);
+
+    tex_rect.S    = (tex_coeff & 0xFFFF000000000000) >> 48;
+    tex_rect.T    = (tex_coeff & 0x0000FFFF00000000) >> 32;
+    tex_rect.DsDx = (tex_coeff & 0x00000000FFFF0000) >> 16;
+    tex_rect.DtDy = (tex_coeff & 0x000000000000FFFF);
+
+    bool flip = (value & 0x0100000000000000) > 0;
+
+    draw_tex_rect(&tex_rect, flip);
+
+    add_PC(16);
 }
 
 void cmd_SetCombineMode(uint64_t value)
@@ -133,16 +233,27 @@ void cmd_SetOtherModes(uint64_t value)
 
 void cmd_SetFillColor(uint64_t value)
 {
-    fill_color = (uint32_t)(value & 0xFFFFFFFF);
+    fill_color = value & 0xFFFFFFFF;
+    add_PC(8);
+}
+
+void cmd_SetPrimColor(uint64_t value)
+{
+    curr_primcolor.prim_min_level  = (value & 0x00003F0000000000) >> 40;
+    curr_primcolor.prim_level_frac = (value & 0x000000FF00000000) >> 32;
+    curr_primcolor.color.red       = (value & 0x00000000FF000000) >> 24;
+    curr_primcolor.color.green     = (value & 0x0000000000FF0000) >> 16;
+    curr_primcolor.color.blue      = (value & 0x000000000000FF00) >> 8;
+    curr_primcolor.color.alpha     = (value & 0x00000000000000FF);
     add_PC(8);
 }
 
 void cmd_SetScissor(uint64_t value)
 {
-    scissor_border.border.XH = (uint16_t)((value & 0x00FFF00000000000) >> 44);
-    scissor_border.border.YH = (uint16_t)((value & 0x00000FFF00000000) >> 32);
-    scissor_border.border.XL = (uint16_t)((value & 0x0000000000FFF000) >> 12);
-    scissor_border.border.YL = (uint16_t) (value & 0x0000000000000FFF);
+    scissor_border.border.XH = (value & 0x00FFF00000000000) >> 44;
+    scissor_border.border.YH = (value & 0x00000FFF00000000) >> 32;
+    scissor_border.border.XL = (value & 0x0000000000FFF000) >> 12;
+    scissor_border.border.YL = (value & 0x0000000000000FFF);
 
     scissor_border.f = ((value & 0x0000000002000000) > 0);
     scissor_border.o = ((value & 0x0000000001000000) > 0);
@@ -161,6 +272,12 @@ void cmd_SyncPipe(uint64_t value)
     add_PC(8);
 }
 
+void cmd_SyncTile(uint64_t value)
+{
+    // Stubbed.
+    add_PC(8);
+}
+
 void cmd_Triangle(uint64_t value)
 {
     uint8_t flags = (value & 0b0011111100000000000000000000000000000000000000000000000000000000) >> 56;
@@ -170,28 +287,28 @@ void cmd_Triangle(uint64_t value)
     edgecoeff_t edges;
     edges.lft = (value & 0x0080000000000000) > 0;
 
-    edges.YL  = (uint16_t)((value & 0x00003FFF00000000) >> 32);
-    edges.YM  = (uint16_t)((value & 0x000000003FFF0000) >> 16);
-    edges.YH  = (uint16_t)((value & 0x0000000000003FFF));
+    edges.YL = (value & 0x00003FFF00000000) >> 32;
+    edges.YM = (value & 0x000000003FFF0000) >> 16;
+    edges.YH = (value & 0x0000000000003FFF);
 
     uint64_t edge_coeff1 = get_coeff(coeff_offset++ * 8);
     uint64_t edge_coeff2 = get_coeff(coeff_offset++ * 8);
     uint64_t edge_coeff3 = get_coeff(coeff_offset++ * 8);
 
-    edges.XL         = (uint16_t)((edge_coeff1 & 0xFFFF000000000000) >> 48);
-    edges.XL_frac    = (uint16_t)((edge_coeff1 & 0x0000FFFF00000000) >> 32);
-    edges.DxLDy      = (uint16_t)((edge_coeff1 & 0x00000000FFFF0000) >> 16);
-    edges.DxLDy_frac = (uint16_t)((edge_coeff1 & 0x000000000000FFFF));
+    edges.XL         = (edge_coeff1 & 0xFFFF000000000000) >> 48;
+    edges.XL_frac    = (edge_coeff1 & 0x0000FFFF00000000) >> 32;
+    edges.DxLDy      = (edge_coeff1 & 0x00000000FFFF0000) >> 16;
+    edges.DxLDy_frac = (edge_coeff1 & 0x000000000000FFFF);
 
-    edges.XH         = (uint16_t)((edge_coeff2 & 0xFFFF000000000000) >> 48);
-    edges.XH_frac    = (uint16_t)((edge_coeff2 & 0x0000FFFF00000000) >> 32);
-    edges.DxHDy      = (uint16_t)((edge_coeff2 & 0x00000000FFFF0000) >> 16);
-    edges.DxHDy_frac = (uint16_t)((edge_coeff2 & 0x000000000000FFFF));
+    edges.XH         = (edge_coeff2 & 0xFFFF000000000000) >> 48;
+    edges.XH_frac    = (edge_coeff2 & 0x0000FFFF00000000) >> 32;
+    edges.DxHDy      = (edge_coeff2 & 0x00000000FFFF0000) >> 16;
+    edges.DxHDy_frac = (edge_coeff2 & 0x000000000000FFFF);
 
-    edges.XM         = (uint16_t)((edge_coeff3 & 0xFFFF000000000000) >> 48);
-    edges.XM_frac    = (uint16_t)((edge_coeff3 & 0x0000FFFF00000000) >> 32);
-    edges.DxMDy      = (uint16_t)((edge_coeff3 & 0x00000000FFFF0000) >> 16);
-    edges.DxMDy_frac = (uint16_t)((edge_coeff3 & 0x000000000000FFFF));
+    edges.XM         = (edge_coeff3 & 0xFFFF000000000000) >> 48;
+    edges.XM_frac    = (edge_coeff3 & 0x0000FFFF00000000) >> 32;
+    edges.DxMDy      = (edge_coeff3 & 0x00000000FFFF0000) >> 16;
+    edges.DxMDy_frac = (edge_coeff3 & 0x000000000000FFFF);
 
     shadecoeff_t shade;
     shadecoeff_t* shade_point = NULL;
@@ -207,45 +324,45 @@ void cmd_Triangle(uint64_t value)
         uint64_t shade_coeff7 = get_coeff(coeff_offset++ * 8);
         uint64_t shade_coeff8 = get_coeff(coeff_offset++ * 8);
 
-        shade.red   = (uint16_t)((shade_coeff1 & 0xFFFF000000000000) >> 48);
-        shade.green = (uint16_t)((shade_coeff1 & 0x0000FFFF00000000) >> 32);
-        shade.blue  = (uint16_t)((shade_coeff1 & 0x00000000FFFF0000) >> 16);
-        shade.alpha = (uint16_t)((shade_coeff1 & 0x000000000000FFFF));
+        shade.red   = (shade_coeff1 & 0xFFFF000000000000) >> 48;
+        shade.green = (shade_coeff1 & 0x0000FFFF00000000) >> 32;
+        shade.blue  = (shade_coeff1 & 0x00000000FFFF0000) >> 16;
+        shade.alpha = (shade_coeff1 & 0x000000000000FFFF);
 
-        shade.DrDx = (uint16_t)((shade_coeff2 & 0xFFFF000000000000) >> 48);
-        shade.DgDx = (uint16_t)((shade_coeff2 & 0x0000FFFF00000000) >> 32);
-        shade.DbDx = (uint16_t)((shade_coeff2 & 0x00000000FFFF0000) >> 16);
-        shade.DaDx = (uint16_t)((shade_coeff2 & 0x000000000000FFFF));
+        shade.DrDx = (shade_coeff2 & 0xFFFF000000000000) >> 48;
+        shade.DgDx = (shade_coeff2 & 0x0000FFFF00000000) >> 32;
+        shade.DbDx = (shade_coeff2 & 0x00000000FFFF0000) >> 16;
+        shade.DaDx = (shade_coeff2 & 0x000000000000FFFF);
 
-        shade.red_frac   = (uint16_t)((shade_coeff3 & 0xFFFF000000000000) >> 48);
-        shade.green_frac = (uint16_t)((shade_coeff3 & 0x0000FFFF00000000) >> 32);
-        shade.blue_frac  = (uint16_t)((shade_coeff3 & 0x00000000FFFF0000) >> 16);
-        shade.alpha_frac = (uint16_t)((shade_coeff3 & 0x000000000000FFFF));
+        shade.red_frac   = (shade_coeff3 & 0xFFFF000000000000) >> 48;
+        shade.green_frac = (shade_coeff3 & 0x0000FFFF00000000) >> 32;
+        shade.blue_frac  = (shade_coeff3 & 0x00000000FFFF0000) >> 16;
+        shade.alpha_frac = (shade_coeff3 & 0x000000000000FFFF);
 
-        shade.DrDx_frac = (uint16_t)((shade_coeff4 & 0xFFFF000000000000) >> 48);
-        shade.DgDx_frac = (uint16_t)((shade_coeff4 & 0x0000FFFF00000000) >> 32);
-        shade.DbDx_frac = (uint16_t)((shade_coeff4 & 0x00000000FFFF0000) >> 16);
-        shade.DaDx_frac = (uint16_t)((shade_coeff4 & 0x000000000000FFFF));
+        shade.DrDx_frac = (shade_coeff4 & 0xFFFF000000000000) >> 48;
+        shade.DgDx_frac = (shade_coeff4 & 0x0000FFFF00000000) >> 32;
+        shade.DbDx_frac = (shade_coeff4 & 0x00000000FFFF0000) >> 16;
+        shade.DaDx_frac = (shade_coeff4 & 0x000000000000FFFF);
 
-        shade.DrDe = (uint16_t)((shade_coeff5 & 0xFFFF000000000000) >> 48);
-        shade.DgDe = (uint16_t)((shade_coeff5 & 0x0000FFFF00000000) >> 32);
-        shade.DbDe = (uint16_t)((shade_coeff5 & 0x00000000FFFF0000) >> 16);
-        shade.DaDe = (uint16_t)((shade_coeff5 & 0x000000000000FFFF));
+        shade.DrDe = (shade_coeff5 & 0xFFFF000000000000) >> 48;
+        shade.DgDe = (shade_coeff5 & 0x0000FFFF00000000) >> 32;
+        shade.DbDe = (shade_coeff5 & 0x00000000FFFF0000) >> 16;
+        shade.DaDe = (shade_coeff5 & 0x000000000000FFFF);
 
-        shade.DrDy = (uint16_t)((shade_coeff6 & 0xFFFF000000000000) >> 48);
-        shade.DgDy = (uint16_t)((shade_coeff6 & 0x0000FFFF00000000) >> 32);
-        shade.DbDy = (uint16_t)((shade_coeff6 & 0x00000000FFFF0000) >> 16);
-        shade.DaDy = (uint16_t)((shade_coeff6 & 0x000000000000FFFF));
+        shade.DrDy = (shade_coeff6 & 0xFFFF000000000000) >> 48;
+        shade.DgDy = (shade_coeff6 & 0x0000FFFF00000000) >> 32;
+        shade.DbDy = (shade_coeff6 & 0x00000000FFFF0000) >> 16;
+        shade.DaDy = (shade_coeff6 & 0x000000000000FFFF);
 
-        shade.DrDe_frac = (uint16_t)((shade_coeff7 & 0xFFFF000000000000) >> 48);
-        shade.DgDe_frac = (uint16_t)((shade_coeff7 & 0x0000FFFF00000000) >> 32);
-        shade.DbDe_frac = (uint16_t)((shade_coeff7 & 0x00000000FFFF0000) >> 16);
-        shade.DaDe_frac = (uint16_t)((shade_coeff7 & 0x000000000000FFFF));
+        shade.DrDe_frac = (shade_coeff7 & 0xFFFF000000000000) >> 48;
+        shade.DgDe_frac = (shade_coeff7 & 0x0000FFFF00000000) >> 32;
+        shade.DbDe_frac = (shade_coeff7 & 0x00000000FFFF0000) >> 16;
+        shade.DaDe_frac = (shade_coeff7 & 0x000000000000FFFF);
 
-        shade.DrDy_frac = (uint16_t)((shade_coeff8 & 0xFFFF000000000000) >> 48);
-        shade.DgDy_frac = (uint16_t)((shade_coeff8 & 0x0000FFFF00000000) >> 32);
-        shade.DbDy_frac = (uint16_t)((shade_coeff8 & 0x00000000FFFF0000) >> 16);
-        shade.DaDy_frac = (uint16_t)((shade_coeff8 & 0x000000000000FFFF));
+        shade.DrDy_frac = (shade_coeff8 & 0xFFFF000000000000) >> 48;
+        shade.DgDy_frac = (shade_coeff8 & 0x0000FFFF00000000) >> 32;
+        shade.DbDy_frac = (shade_coeff8 & 0x00000000FFFF0000) >> 16;
+        shade.DaDy_frac = (shade_coeff8 & 0x000000000000FFFF);
 
         shade_point = &shade;
         add_PC(64);

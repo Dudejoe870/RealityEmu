@@ -5,7 +5,8 @@
         "ostream": "c",
         "ratio": "c",
         "system_error": "c",
-        "type_traits": "c"
+        "type_traits": "c",
+        "valarray": "c"
     },
     "C_Cpp.default.cStandard": "c11",
     "C_Cpp.default.intelliSenseMode": "gcc-x64"

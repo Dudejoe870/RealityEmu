@@ -84,12 +84,6 @@ void CPU_init(void* ROM, size_t ROM_size)
 
     pthread_create(&CPU_thread, NULL, CPU_run, NULL);
 
-    struct sched_param params;
-
-    params.sched_priority = sched_get_priority_max(SCHED_FIFO);
-
-    pthread_setschedparam(CPU_thread, SCHED_FIFO, &params); // Hopefully we can prioritize this thread.
-
     RDP_init();
 }
 

@@ -22,15 +22,39 @@ typedef enum
 
 typedef struct
 {
-    uint32_t      image_addr;
-    imageformat_t image_format;
-    bpp_t         image_size;
-    uint16_t      image_width;
+    uint32_t      addr;
+    imageformat_t format;
+    bpp_t         size;
+    uint16_t      width;
 } image_t;
 
 image_t  curr_colorimage;
 image_t  curr_teximage;
 uint32_t curr_zimage_addr;
+
+typedef struct
+{
+    imageformat_t format;
+    bpp_t         size;
+    uint16_t      line;
+    uint16_t      addr;
+    uint8_t       palette;
+
+    bool    ct;
+    bool    mt;
+    uint8_t mask_t;
+    uint8_t shift_t;
+
+    bool cs;
+    bool ms;
+    uint8_t mask_s;
+    uint8_t shift_s;
+
+    float sh;
+    float th;
+} tile_t;
+
+extern tile_t tiles[];
 
 typedef struct
 {
@@ -298,7 +322,29 @@ typedef struct
 
 keygb_t curr_keygb;
 
+extern uint8_t RDP_TMEM[];
+
 bool should_run;
 
 void RDP_init  (void);
 void RDP_wake_up(void);
+
+__attribute__((__always_inline__)) static inline float get_float_value_from_frmt(uint32_t integer, uint32_t decimal, float decimal_max)
+{
+    return ((int)integer) + ((float)decimal / decimal_max);
+}
+
+__attribute__((__always_inline__)) static inline float get_ten_point_two(uint16_t value)
+{
+    return get_float_value_from_frmt(value >> 2, value & 0x3, 3.0f);
+}
+
+__attribute__((__always_inline__)) static inline float get_ten_point_five(uint16_t value)
+{
+    return get_float_value_from_frmt(value >> 5, value & 0x1F, 31.0f);
+}
+
+__attribute__((__always_inline__)) static inline float get_five_point_ten(uint16_t value)
+{
+    return get_float_value_from_frmt(value >> 10, value & 0x3FF, 1024.0f);
+}
