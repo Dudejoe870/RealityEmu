@@ -14,16 +14,33 @@ __attribute__((__always_inline__)) static inline uint32_t get_color(uint8_t r, u
         float _r = ((float)r / 255) * 31;
         float _g = ((float)g / 255) * 31;
         float _b = ((float)b / 255) * 31;
-        float _a = ((float)a / 255) * 31;
+        float _a = ((float)a / 255);
 
         uint8_t real_r = (uint8_t)_r;
         uint8_t real_g = (uint8_t)_g;
         uint8_t real_b = (uint8_t)_b;
-        uint8_t real_a = (uint8_t)_a;
 
-        return (((real_r & 0b11111) << 11) | ((real_g & 0b11111) << 6) | ((real_b & 0b11111) << 1) | (real_a > 0));
+        return (((real_r & 0b11111) << 11) | ((real_g & 0b11111) << 6) | ((real_b & 0b11111) << 1) | (_a > 0));
     }
     return 0;
+}
+
+__attribute__((__always_inline__)) static inline void convert_16_32(rgbacolor_t* out, uint16_t color)
+{
+    uint8_t r = (color & 0b1111100000000000) >> 11;
+    uint8_t g = (color & 0b0000011111000000) >> 6;
+    uint8_t b = (color & 0b0000000000111110) >> 1;
+    uint8_t a = (color & 0b0000000000000001);
+
+    float _r = (float)r / 31;
+    float _g = (float)g / 31;
+    float _b = (float)b / 31;
+    float _a = (float)a;
+
+    out->red   = (uint8_t)(_r * 255);
+    out->green = (uint8_t)(_g * 255);
+    out->blue  = (uint8_t)(_b * 255);
+    out->alpha = (uint8_t)(_a * 255);
 }
 
 __attribute__((__always_inline__)) static inline void set_pixel_32(uint32_t x, uint32_t y, uint32_t packed_color)
@@ -42,6 +59,37 @@ __attribute__((__always_inline__)) static inline void set_pixel_32(uint32_t x, u
     framebuffer[index] = bswap_32(packed_color);
 }
 
+__attribute__((__always_inline__)) static inline rgbacolor_t get_pixel(uint32_t x, uint32_t y)
+{
+    rgbacolor_t res;
+    memset(&res, 0, sizeof(rgbacolor_t));
+
+    uint32_t screen_x1 = (uint32_t)(scissor_border.border.XH >> 2);
+    uint32_t screen_y1 = (uint32_t)(scissor_border.border.YH >> 2);
+    uint32_t screen_x2 = (uint32_t)(scissor_border.border.XL >> 2);
+    uint32_t screen_y2 = (uint32_t)(scissor_border.border.YL >> 2);
+
+    if ((x < screen_x1 || y < screen_y1) || (x > screen_x2 || y > screen_y2)) return res;
+
+    uint32_t index = x + y * (curr_colorimage.width+1);
+    
+    if (curr_colorimage.size == BPP_32)
+    {
+        uint32_t* framebuffer = get_real_memory_loc(curr_colorimage.addr);
+        uint32_t pixel = bswap_32(framebuffer[index]);
+        res.red   = (pixel & 0xFF000000) >> 24;
+        res.green = (pixel & 0x00FF0000) >> 16;
+        res.blue  = (pixel & 0x0000FF00) >> 8;
+        res.alpha = (pixel & 0x000000FF);
+    }
+    else if (curr_colorimage.size == BPP_16)
+    {
+        uint16_t* framebuffer = get_real_memory_loc(curr_colorimage.addr);
+        convert_16_32(&res, bswap_16(framebuffer[index]));
+    }
+
+    return res;
+}
 
 __attribute__((__always_inline__)) static inline void set_pixel_16(uint32_t x, uint32_t y, uint16_t color)
 {
@@ -63,43 +111,36 @@ __attribute__((__always_inline__)) static inline void set_pixel(uint32_t x, uint
     else if (curr_colorimage.size == BPP_16) set_pixel_16(x, y, (uint16_t)color);
 }
 
-__attribute__((__always_inline__)) static inline uint32_t process_pixel(cccolorin_t colors)
+__attribute__((__always_inline__)) static inline uint32_t process_pixel(cccolorin_t cc_colors, blcolorin_t bl_colors)
 {
     if (othermodes.cycle_type == CYCLE_1 || othermodes.cycle_type == CYCLE_2)
     {
         rgbacolor_t cc_color_0;
         if (othermodes.cycle_type == CYCLE_2)
         {
-            cc_color_0 = get_cc_color(colors, 0);
-            colors.combined = &cc_color_0;
+            cc_color_0 = get_cc_color(cc_colors, 0);
+            cc_colors.combined = &cc_color_0;
         }
 
-        rgbacolor_t cc_color_1 = get_cc_color(colors, 1);
+        rgbacolor_t cc_color_1 = get_cc_color(cc_colors, 1);
 
-        return get_color(cc_color_1.red, cc_color_1.green, cc_color_1.blue, cc_color_1.alpha);
+        bl_colors.combined = &cc_color_1;
+        rgbacolor_t bl_color_0 = get_bl_color(bl_colors, 0);
+
+        rgbacolor_t bl_color_1;
+        memcpy(&bl_color_1, &bl_color_0, sizeof(rgbacolor_t));
+        if (othermodes.cycle_type == CYCLE_2)
+        {
+            bl_colors.combined = &bl_color_0;
+            bl_color_1 = get_bl_color(bl_colors, 1);
+        }
+
+        return get_color(bl_color_1.red, bl_color_1.green, bl_color_1.blue, bl_color_1.alpha);
     }
-    else if (othermodes.cycle_type == CYCLE_COPY && colors.texel0_color)
-        return get_color(colors.texel0_color->red, colors.texel0_color->green, colors.texel0_color->blue, colors.texel0_color->alpha);
+    else if (othermodes.cycle_type == CYCLE_COPY && cc_colors.texel0_color)
+        return get_color(cc_colors.texel0_color->red, cc_colors.texel0_color->green, cc_colors.texel0_color->blue, cc_colors.texel0_color->alpha);
     
     return 0;
-}
-
-__attribute__((__always_inline__)) static inline void convert_16_32(rgbacolor_t* out, uint16_t color)
-{
-    uint8_t r = (color & 0b1111100000000000) >> 11;
-    uint8_t g = (color & 0b0000011111000000) >> 6;
-    uint8_t b = (color & 0b0000000000111110) >> 1;
-    uint8_t a = (color & 0b0000000000000001);
-
-    float _r = (float)r / 31;
-    float _g = (float)g / 31;
-    float _b = (float)b / 31;
-    float _a = (float)a / 31;
-
-    out->red   = (uint8_t)(_r * 255);
-    out->green = (uint8_t)(_g * 255);
-    out->blue  = (uint8_t)(_b * 255);
-    out->alpha = (uint8_t)(_a * 255);
 }
 
 __attribute__((__always_inline__)) static inline void get_tex_coords(uint32_t* S, uint32_t* T, float float_S, float float_T, uint8_t index, bool flip)
@@ -234,13 +275,19 @@ __attribute__((__always_inline__)) static inline void do_x_pixel_scanbuffer(size
                 shd_color.alpha = (uint8_t)*shd_alpha;
             }
 
-            cccolorin_t colors; 
-            colors.combined     = NULL;
-            colors.texel0_color = NULL;
-            colors.texel1_color = NULL;
-            colors.shade_color  = &shd_color;
+            cccolorin_t cc_colors; 
+            cc_colors.combined     = NULL;
+            cc_colors.texel0_color = NULL;
+            cc_colors.texel1_color = NULL;
+            cc_colors.shade_color  = &shd_color;
 
-            color = process_pixel(colors);
+            blcolorin_t bl_colors;
+            bl_colors.shade_color = &shd_color;
+            rgbacolor_t mem_color = get_pixel(x, y);
+            bl_colors.mem_color   = &mem_color;
+            bl_colors.combined    = NULL;
+
+            color = process_pixel(cc_colors, bl_colors);
         }
 
         set_pixel(x, y, color);
@@ -456,13 +503,19 @@ void draw_tex_rect(texrect_t* tex_rect, bool flip)
                     }
                 }
 
-                cccolorin_t colors;
-                colors.combined     = NULL;
-                colors.shade_color  = NULL;
-                colors.texel0_color = &texel0;
-                colors.texel1_color = &texel1;
+                cccolorin_t cc_colors;
+                cc_colors.combined     = NULL;
+                cc_colors.shade_color  = NULL;
+                cc_colors.texel0_color = &texel0;
+                cc_colors.texel1_color = &texel1;
 
-                uint32_t color = process_pixel(colors);
+                blcolorin_t bl_colors;
+                bl_colors.shade_color = NULL;
+                rgbacolor_t mem_color = get_pixel(x, y);
+                bl_colors.mem_color   = &mem_color;
+                bl_colors.combined    = NULL;
+
+                uint32_t color = process_pixel(cc_colors, bl_colors);
                 set_pixel(x, y, color);
             }
             else

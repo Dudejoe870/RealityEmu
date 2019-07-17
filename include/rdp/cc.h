@@ -24,9 +24,7 @@ typedef enum
     CC_CONVERT_K4,
     CC_CONVERT_K5,
     CC_ONE,
-    CC_ZERO,
-    CC_ONE_ALPHA,
-    CC_ZERO_ALPHA,
+    CC_ZERO
 } ccinput_t;
 
 extern char* ccinput_names[];
@@ -38,15 +36,5 @@ typedef struct
     rgbacolor_t* texel1_color;
     rgbacolor_t* combined;
 } cccolorin_t;
-
-typedef struct
-{
-    rgbacolor_t rgba_A;
-    rgbacolor_t rgba_B;
-    rgbacolor_t rgba_C;
-    rgbacolor_t rgba_D;
-
-    rgbacolor_t combined;
-} cccycle_t;
 
 rgbacolor_t get_cc_color(cccolorin_t colors, uint8_t cycle);

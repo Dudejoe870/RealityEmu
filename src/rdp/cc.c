@@ -24,9 +24,7 @@ char* ccinput_names[] =
     "CC_CONVERT_K4",
     "CC_CONVERT_K5",
     "CC_ONE",
-    "CC_ZERO",
-    "CC_ONE_ALPHA",
-    "CC_ZERO_ALPHA"
+    "CC_ZERO"
 };
 
 __attribute__((__always_inline__)) static inline ccinput_t get_cc_a(uint8_t cycle, bool alpha)
@@ -44,8 +42,8 @@ __attribute__((__always_inline__)) static inline ccinput_t get_cc_a(uint8_t cycl
             case 3:  return CC_PRIM_ALPHA;
             case 4:  return CC_SHADED_ALPHA;
             case 5:  return CC_ENV_ALPHA;
-            case 6:  return CC_ONE_ALPHA;
-            default: return CC_ZERO_ALPHA;
+            case 6:  return CC_ONE;
+            default: return CC_ZERO;
         }
     }
     else       
@@ -82,8 +80,8 @@ __attribute__((__always_inline__)) static inline ccinput_t get_cc_b(uint8_t cycl
             case 3:  return CC_PRIM_ALPHA;
             case 4:  return CC_SHADED_ALPHA;
             case 5:  return CC_ENV_ALPHA;
-            case 6:  return CC_ONE_ALPHA;
-            default: return CC_ZERO_ALPHA;
+            case 6:  return CC_ONE;
+            default: return CC_ZERO;
         }
     }
     else
@@ -121,7 +119,7 @@ __attribute__((__always_inline__)) static inline ccinput_t get_cc_c(uint8_t cycl
             case 4:  return CC_SHADED_ALPHA;
             case 5:  return CC_ENV_ALPHA;
             case 6:  return CC_PRIM_LOD_FRAC;
-            default: return CC_ZERO_ALPHA;
+            default: return CC_ZERO;
         }
     }
     else       
@@ -166,8 +164,8 @@ __attribute__((__always_inline__)) static inline ccinput_t get_cc_d(uint8_t cycl
             case 3:  return CC_PRIM_ALPHA;
             case 4:  return CC_SHADED_ALPHA;
             case 5:  return CC_ENV_ALPHA;
-            case 6:  return CC_ONE_ALPHA;
-            default: return CC_ZERO_ALPHA;
+            case 6:  return CC_ONE;
+            default: return CC_ZERO;
         }
     }
     else       
@@ -193,31 +191,12 @@ __attribute__((__always_inline__)) static inline void unimplemented_ccinput(ccin
     printf("WARNING: Unimplemented CC Input %s!\n", ccinput_names[val]);
 }
 
-void get_ccinput_val(ccinput_t in, cccolorin_t colors, rgbacolor_t* out)
+void get_ccinput_val_a(ccinput_t in, cccolorin_t colors, rgbacolor_t* out)
 {
     switch (in)
     {
-        case CC_COMBINED:
-            if (colors.combined)
-                memcpy(out, colors.combined, sizeof(rgbacolor_t)-sizeof(uint8_t));
-            return;
-        case CC_TEXEL_0:
-            if (colors.texel0_color)
-                memcpy(out, colors.texel0_color, sizeof(rgbacolor_t)-sizeof(uint8_t));
-            return;
-        case CC_TEXEL_1:
-            if (colors.texel1_color)
-                memcpy(out, colors.texel1_color, sizeof(rgbacolor_t)-sizeof(uint8_t));
-            return;
-        case CC_PRIM_COLOR:
-            memcpy(out, &curr_primcolor.color, sizeof(rgbacolor_t)-sizeof(uint8_t));
-            return;
-        case CC_SHADE_COLOR:
-            if (colors.shade_color)
-                memcpy(out, colors.shade_color, sizeof(rgbacolor_t)-sizeof(uint8_t));
-            return;
-        case CC_ENV_COLOR:
-            memcpy(out, &curr_envcolor, sizeof(rgbacolor_t)-sizeof(uint8_t));
+        case CC_LOD_FRAC:
+            out->alpha = 1;
             return;
         case CC_COMBINED_ALPHA:
             if (colors.combined)
@@ -242,16 +221,102 @@ void get_ccinput_val(ccinput_t in, cccolorin_t colors, rgbacolor_t* out)
             out->alpha = curr_envcolor.alpha;
             return;
         case CC_ONE:
-            memset(out, 1, sizeof(rgbacolor_t)-sizeof(uint8_t));
-            return;
-        case CC_ZERO:
-            memset(out, 0, sizeof(rgbacolor_t)-sizeof(uint8_t));
-            return;
-        case CC_ONE_ALPHA:
             out->alpha = 1;
             return;
-        case CC_ZERO_ALPHA:
+        case CC_ZERO:
             out->alpha = 0;
+            return;
+        default:
+            if (config.cc_logging) unimplemented_ccinput(in);
+            return;
+    }
+}
+
+void get_ccinput_val_r(ccinput_t in, cccolorin_t colors, rgbacolor_t* out)
+{
+    switch (in)
+    {
+        case CC_COMBINED:
+            if (colors.combined)
+                memcpy(out, colors.combined, sizeof(rgbacolor_t));
+            return;
+        case CC_TEXEL_0:
+            if (colors.texel0_color)
+                memcpy(out, colors.texel0_color, sizeof(rgbacolor_t));
+            return;
+        case CC_TEXEL_1:
+            if (colors.texel1_color)
+                memcpy(out, colors.texel1_color, sizeof(rgbacolor_t));
+            return;
+        case CC_PRIM_COLOR:
+            memcpy(out, &curr_primcolor.color, sizeof(rgbacolor_t));
+            return;
+        case CC_SHADE_COLOR:
+            if (colors.shade_color)
+                memcpy(out, colors.shade_color, sizeof(rgbacolor_t));
+            return;
+        case CC_ENV_COLOR:
+            memcpy(out, &curr_envcolor, sizeof(rgbacolor_t));
+            return;
+        case CC_LOD_FRAC:
+            out->red   = 1;
+            out->green = 1;
+            out->blue  = 1;
+            out->alpha = 1;
+            return;
+        case CC_COMBINED_ALPHA:
+            if (colors.combined)
+            {
+                out->red   = colors.combined->alpha;
+                out->green = colors.combined->alpha;
+                out->blue  = colors.combined->alpha;
+                out->alpha = colors.combined->alpha;
+            }
+            return;
+        case CC_TEX_0_ALPHA:
+            if (colors.texel0_color)
+            {
+                out->red   = colors.texel0_color->alpha;
+                out->green = colors.texel0_color->alpha;
+                out->blue  = colors.texel0_color->alpha;
+                out->alpha = colors.texel0_color->alpha;
+            }
+            return;
+        case CC_TEX_1_ALPHA:
+            if (colors.texel1_color)
+            {
+                out->red   = colors.texel1_color->alpha;
+                out->green = colors.texel1_color->alpha;
+                out->blue  = colors.texel1_color->alpha;
+                out->alpha = colors.texel1_color->alpha;
+            }
+            return;
+        case CC_PRIM_ALPHA:
+            out->red   = curr_primcolor.color.alpha;
+            out->green = curr_primcolor.color.alpha;
+            out->blue  = curr_primcolor.color.alpha;
+            out->alpha = curr_primcolor.color.alpha;
+            return;
+        case CC_SHADED_ALPHA:
+            if (colors.shade_color)
+            {
+                out->red   = colors.shade_color->alpha;
+                out->green = colors.shade_color->alpha;
+                out->blue  = colors.shade_color->alpha;
+                out->alpha = colors.shade_color->alpha;
+            }
+            return;
+        case CC_ENV_ALPHA:
+            out->red   = curr_envcolor.alpha;
+            out->green = curr_envcolor.alpha;
+            out->blue  = curr_envcolor.alpha;
+            out->alpha = curr_envcolor.alpha;
+            return;
+        case CC_ONE:
+            memset(out, 1, sizeof(rgbacolor_t));
+            return;
+        case CC_ZERO:
+            memset(out, 0, sizeof(rgbacolor_t));
             return;
         default:
             if (config.cc_logging) unimplemented_ccinput(in);
@@ -276,21 +341,21 @@ rgbacolor_t get_cc_color(cccolorin_t colors, uint8_t cycle)
     ccinput_t r_B = get_cc_b(cycle, false);
     ccinput_t r_C = get_cc_c(cycle, false);
     ccinput_t r_D = get_cc_d(cycle, false);
-
-    get_ccinput_val(r_A, colors, &rgba_A);
-    get_ccinput_val(r_B, colors, &rgba_B);
-    get_ccinput_val(r_C, colors, &rgba_C);
-    get_ccinput_val(r_D, colors, &rgba_D);
+    
+    get_ccinput_val_r(r_A, colors, &rgba_A);
+    get_ccinput_val_r(r_B, colors, &rgba_B);
+    get_ccinput_val_r(r_C, colors, &rgba_C);
+    get_ccinput_val_r(r_D, colors, &rgba_D);
 
     ccinput_t a_A = get_cc_a(cycle, true);
     ccinput_t a_B = get_cc_b(cycle, true);
     ccinput_t a_C = get_cc_c(cycle, true);
     ccinput_t a_D = get_cc_d(cycle, true);
 
-    get_ccinput_val(a_A, colors, &rgba_A);
-    get_ccinput_val(a_B, colors, &rgba_B);
-    get_ccinput_val(a_C, colors, &rgba_C);
-    get_ccinput_val(a_D, colors, &rgba_D);
+    get_ccinput_val_a(a_A, colors, &rgba_A);
+    get_ccinput_val_a(a_B, colors, &rgba_B);
+    get_ccinput_val_a(a_C, colors, &rgba_C);
+    get_ccinput_val_a(a_D, colors, &rgba_D);
 
     res.red   = (rgba_A.red   - rgba_B.red)   * rgba_C.red   + rgba_D.red;
     res.green = (rgba_A.green - rgba_B.green) * rgba_C.green + rgba_D.green;
