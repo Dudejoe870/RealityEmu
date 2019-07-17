@@ -827,7 +827,8 @@ void SPECIAL(uint32_t value)
             SUBU(value);
             return;
         case 0b001111: // SYNC
-            return; // Executes as a NOP on the VR4300.
+            advance_PC(); // Executes as a NOP on the VR4300.
+            return;
         case 0b110100: // TEQ
             TEQ(value);
             return;
