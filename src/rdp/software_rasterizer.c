@@ -220,6 +220,7 @@ __attribute__((__always_inline__)) static inline void do_x_pixel_scanbuffer(size
         {
             rgbacolor_t shd_color;
             memset(&shd_color, 0, sizeof(shd_color));
+            
             bool edge_cond = false;
 
             if (lft == 0) edge_cond = x == xmax;

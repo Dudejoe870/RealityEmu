@@ -7,7 +7,9 @@
 void* CPU_run(void* vargp)
 {
     while (is_running)
+    {
         interp_step();
+    }
     return NULL;
 }
 

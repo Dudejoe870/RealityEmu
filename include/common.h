@@ -6,6 +6,7 @@
 #include "window.h"
 
 #include "r4300/cpu.h"
+#include "r4300/debug.h"
 #include "r4300/exception.h"
 #include "r4300/interpreter.h"
 #include "r4300/mem.h"

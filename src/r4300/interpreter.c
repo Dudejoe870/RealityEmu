@@ -604,13 +604,13 @@ __attribute__((__always_inline__)) static inline void SLLV(uint32_t value)
 
 __attribute__((__always_inline__)) static inline void SLT(uint32_t value)
 {
-    SET_cond(INST_RD(value), (long)read_GPR(INST_RS(value)) < (long)read_GPR(INST_RT(value)));
+    SET_cond(INST_RD(value), (int)read_GPR(INST_RS(value)) < (int)read_GPR(INST_RT(value)));
     advance_PC();
 }
 
 __attribute__((__always_inline__)) static inline void SLTU(uint32_t value)
 {
-    SET_cond(INST_RD(value), read_GPR(INST_RS(value)) < read_GPR(INST_RT(value)));
+    SET_cond(INST_RD(value), (uint32_t)read_GPR(INST_RS(value)) < (uint32_t)read_GPR(INST_RT(value)));
     advance_PC();
 }
 
@@ -1323,9 +1323,10 @@ void LW(uint32_t value)
 
 void LWL(uint32_t value)
 {
-    short    offs = (short)INST_IMM(value);
-    uint32_t addr = (uint32_t)read_GPR(INST_RS(value)) + offs;
-    uint32_t mem  = (uint32_t)read_uint32(addr);
+    short    offs      = (short)INST_IMM(value);
+    uint32_t base_addr = (uint32_t)read_GPR(INST_RS(value));
+    uint32_t addr      = (base_addr & ~0x3) + offs;
+    uint32_t mem       = (uint32_t)read_uint32(addr);
 
     uint16_t shift = (offs % 8) * 8;
     uint64_t reg   = read_GPR(INST_RT(value));
@@ -1338,9 +1339,10 @@ void LWL(uint32_t value)
 
 void LWR(uint32_t value)
 {
-    short    offs = (short)INST_IMM(value);
-    uint32_t addr = (uint32_t)read_GPR(INST_RS(value)) + offs;
-    uint32_t mem  = (uint32_t)read_uint32(addr);
+    short    offs      = (short)INST_IMM(value);
+    uint32_t base_addr = (uint32_t)read_GPR(INST_RS(value));
+    uint32_t addr      = (base_addr & ~0x3) + offs;
+    uint32_t mem       = (uint32_t)read_uint32(addr);
 
     uint16_t shift = (offs % 8) * 8;
     uint64_t reg   = read_GPR(INST_RT(value));
@@ -1397,13 +1399,13 @@ void SH(uint32_t value)
 
 void SLTI(uint32_t value)
 {
-    SET_cond(INST_RT(value), (long)read_GPR(INST_RS(value)) < (short)INST_IMM(value));
+    SET_cond(INST_RT(value), (int)read_GPR(INST_RS(value)) < (short)INST_IMM(value));
     advance_PC();
 }
 
 void SLTIU(uint32_t value)
 {
-    SET_cond(INST_RT(value), read_GPR(INST_RS(value)) < (uint16_t)INST_IMM(value));
+    SET_cond(INST_RT(value), (uint32_t)read_GPR(INST_RS(value)) < (uint16_t)INST_IMM(value));
     advance_PC();
 }
 

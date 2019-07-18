@@ -35,7 +35,10 @@ void invoke_TLB_miss(uint32_t addr, bool store)
               | ((store ? (uint32_t)EXC_TLBS : (uint32_t)EXC_TLBL) 
               | (is_branching ? 0x80000000 : 0)), COP0_CAUSE);
     write_COP0(read_COP0(COP0_CAUSE) & ~0xFF00, COP0_CAUSE);
-    if (config.debug_logging) printf("TLB Miss at PC: 0x%x, BadVAddr: 0x%x\n", read_PC(), addr);
+    if (config.debug_logging) printf("TLB Miss at PC: 0x%x, BadVAddr: 0x%x, Read/Write: %s\n", read_PC(), addr, (store) ? "Write" : "Read");
+
+    //dbg_memdump(0x80000000, 0x803FFFFF);
+    //dbg_printreg();
 
     write_PC(((read_COP0(COP0_STATUS) & 0b10000000000000000000000) > 0) ? 0xBFC00200 - 4 : 0x80000000 - 4);
     // We use the Exception Vector - 4 here because if this is a Load or store instruction
