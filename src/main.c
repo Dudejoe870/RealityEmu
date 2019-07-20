@@ -118,6 +118,13 @@ int main(int argc, char** argv)
 
     config.refresh_rate = (config.region == REG_NTSC || config.region == REG_MPAL) ? 60 : 50;
 
+    switch (config.region)
+    {
+        case REG_NTSC: config.vi_clock = 48681812; break;
+        case REG_PAL:  config.vi_clock = 49656530; break;
+        case REG_MPAL: config.vi_clock = 48628316; break;
+    }
+
     CPU_init(ROM, (size_t)len);
 
     window_init(WINDOW_WIDTH, WINDOW_HEIGHT, " ");
@@ -130,7 +137,7 @@ int main(int argc, char** argv)
             is_running = false;
         time_seconds = ((float)SDL_GetTicks()) / 1000;
 
-        CPU_mhz = (all_cycles / 1000000) / time_seconds;
+        CPU_mhz = (r4300.all_cycles / 1000000) / time_seconds;
     }
 
     window_cleanup();

@@ -1,14 +1,17 @@
 #pragma once
 
+#include "audio.h"
 #include "cart.h"
 #include "cic.h"
 #include "config.h"
 #include "window.h"
 
+#include "mips/interpreter.h"
+
 #include "r4300/cpu.h"
 #include "r4300/debug.h"
 #include "r4300/exception.h"
-#include "r4300/interpreter.h"
+#include "r4300/instutils.h"
 #include "r4300/mem.h"
 #include "r4300/mi.h"
 #include "r4300/opcodetable.h"

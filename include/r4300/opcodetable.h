@@ -1,10 +1,11 @@
 #pragma once
 
 #include <stdint.h>
+#include "r4300/cpu.h"
 
 typedef struct
 {
-    void (*interpret)(uint32_t value);
+    void (*interpret)(uint32_t value, cpu_t* cpu);
 } opcode_t;
 
 opcode_t opcode_table[0x3F+1]; // Indexed by the first six bits of the Instruction.

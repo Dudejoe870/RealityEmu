@@ -25,70 +25,67 @@ typedef enum
 void invoke_TLB_miss(uint32_t addr, bool store)
 {
     uint32_t VPN2 = (addr / 0x1000) >> 1;
-    write_COP0(addr,       COP0_BADVADDR);
-    write_COP0(VPN2 << 4,  COP0_CONTEXT);
-    write_COP0(VPN2 << 4,  COP0_XCONTEXT);
-    write_COP0(VPN2 << 13, COP0_ENTRYHI);
+    write_COP0(addr,       COP0_BADVADDR, &r4300);
+    write_COP0(VPN2 << 4,  COP0_CONTEXT, &r4300);
+    write_COP0(VPN2 << 4,  COP0_XCONTEXT, &r4300);
+    write_COP0(VPN2 << 13, COP0_ENTRYHI, &r4300);
 
-    write_COP0(!is_branching ? read_PC() : read_PC() - 4, COP0_EPC);
-    write_COP0(read_COP0(COP0_CAUSE)
+    write_COP0(!r4300.is_branching ? read_PC(&r4300) : read_PC(&r4300) - 4, COP0_EPC, &r4300);
+    write_COP0(read_COP0(COP0_CAUSE, &r4300)
               | ((store ? (uint32_t)EXC_TLBS : (uint32_t)EXC_TLBL) 
-              | (is_branching ? 0x80000000 : 0)), COP0_CAUSE);
-    write_COP0(read_COP0(COP0_CAUSE) & ~0xFF00, COP0_CAUSE);
-    if (config.debug_logging) printf("TLB Miss at PC: 0x%x, BadVAddr: 0x%x, Read/Write: %s\n", read_PC(), addr, (store) ? "Write" : "Read");
-
-    //dbg_memdump(0x80000000, 0x803FFFFF);
-    //dbg_printreg();
-
-    write_PC(((read_COP0(COP0_STATUS) & 0b10000000000000000000000) > 0) ? 0xBFC00200 - 4 : 0x80000000 - 4);
+              | (r4300.is_branching ? 0x80000000 : 0)), COP0_CAUSE, &r4300);
+    write_COP0(read_COP0(COP0_CAUSE, &r4300) & ~0xFF00, COP0_CAUSE, &r4300);
+    if (config.debug_logging) printf("TLB Miss at PC: 0x%x, BadVAddr: 0x%x, Read/Write: %s\n", read_PC(&r4300), addr, (store) ? "Write" : "Read");
+    
+    write_PC(((read_COP0(COP0_STATUS, &r4300) & 0b10000000000000000000000) > 0) ? 0xBFC00200 - 4 : 0x80000000 - 4, &r4300);
     // We use the Exception Vector - 4 here because if this is a Load or store instruction
     // we are going to advance by 4, so to fix this we just set it to its destination - 4.
 }
 
 void invoke_break(void)
 {
-    write_COP0(!is_branching ? read_PC() : read_PC() - 4, COP0_EPC);
-    write_COP0(read_COP0(COP0_CAUSE)
+    write_COP0(!r4300.is_branching ? read_PC(&r4300) : read_PC(&r4300) - 4, COP0_EPC, &r4300);
+    write_COP0(read_COP0(COP0_CAUSE, &r4300)
               | (uint32_t)EXC_BP
-              | (is_branching ? 0x80000000 : 0), COP0_CAUSE);
-    write_COP0(read_COP0(COP0_CAUSE) & ~0xFF00, COP0_CAUSE);
-    if (config.debug_logging) printf("Break at PC: 0x%x\n", read_PC());
+              | (r4300.is_branching ? 0x80000000 : 0), COP0_CAUSE, &r4300);
+    write_COP0(read_COP0(COP0_CAUSE, &r4300) & ~0xFF00, COP0_CAUSE, &r4300);
+    if (config.debug_logging) printf("Break at PC: 0x%x\n", read_PC(&r4300));
 
-    write_PC(((read_COP0(COP0_STATUS) & 0b10000000000000000000000) > 0) ? 0xBFC00380 - 4 : 0x80000180 - 4);
+    write_PC(((read_COP0(COP0_STATUS, &r4300) & 0b10000000000000000000000) > 0) ? 0xBFC00380 - 4 : 0x80000180 - 4, &r4300);
 }
 
 void invoke_trap(void)
 {
-    write_COP0(!is_branching ? read_PC() : read_PC() - 4, COP0_EPC);
-    write_COP0(read_COP0(COP0_CAUSE)
+    write_COP0(!r4300.is_branching ? read_PC(&r4300) : read_PC(&r4300) - 4, COP0_EPC, &r4300);
+    write_COP0(read_COP0(COP0_CAUSE, &r4300)
               | (uint32_t)EXC_TR
-              | (is_branching ? 0x80000000 : 0), COP0_CAUSE);
-    write_COP0(read_COP0(COP0_CAUSE) & ~0xFF00, COP0_CAUSE);
-    if (config.debug_logging) printf("Trap at PC: 0x%x\n", read_PC());
+              | (r4300.is_branching ? 0x80000000 : 0), COP0_CAUSE, &r4300);
+    write_COP0(read_COP0(COP0_CAUSE, &r4300) & ~0xFF00, COP0_CAUSE, &r4300);
+    if (config.debug_logging) printf("Trap at PC: 0x%x\n", read_PC(&r4300));
 
-    write_PC(((read_COP0(COP0_STATUS) & 0b10000000000000000000000) > 0) ? 0xBFC00380 - 4 : 0x80000180 - 4);
+    write_PC(((read_COP0(COP0_STATUS, &r4300) & 0b10000000000000000000000) > 0) ? 0xBFC00380 - 4 : 0x80000180 - 4, &r4300);
 }
 
 void poll_int(void)
 {
-    if ((uint32_t)regs.COP0[COP0_COUNT].value == (uint32_t)regs.COP0[COP0_COMPARE].value)
-        regs.COP0[COP0_CAUSE].value |= 0x8000;
+    if ((uint32_t)r4300.regs.COP0[COP0_COUNT].value == (uint32_t)r4300.regs.COP0[COP0_COMPARE].value)
+        r4300.regs.COP0[COP0_CAUSE].value |= 0x8000;
     
-    if (((uint32_t)regs.COP0[COP0_STATUS].value & 0b111) == 0b001)
+    if (((uint32_t)r4300.regs.COP0[COP0_STATUS].value & 0b111) == 0b001)
     {
-        uint32_t Cause = (uint32_t)regs.COP0[COP0_CAUSE].value & 0xFF00;
+        uint32_t Cause = (uint32_t)r4300.regs.COP0[COP0_CAUSE].value & 0xFF00;
         if (Cause > 0)
         {
-            uint32_t Status = (uint32_t)regs.COP0[COP0_STATUS].value & 0xFF00;
+            uint32_t Status = (uint32_t)r4300.regs.COP0[COP0_STATUS].value & 0xFF00;
             if ((Status & Cause) > 0)
             {
-                regs.COP0[COP0_EPC].value    = !is_branching ? (uint32_t)regs.PC.value : (uint32_t)regs.PC.value - 4;
-                regs.COP0[COP0_CAUSE].value |= (uint32_t)EXC_INT | (is_branching ? 0x80000000 : 0);
-                regs.COP0[COP0_CAUSE].value &= ~0xFF00;
+                r4300.regs.COP0[COP0_EPC].value    = !r4300.is_branching ? (uint32_t)r4300.regs.PC.value : (uint32_t)r4300.regs.PC.value - 4;
+                r4300.regs.COP0[COP0_CAUSE].value |= (uint32_t)EXC_INT | (r4300.is_branching ? 0x80000000 : 0);
+                r4300.regs.COP0[COP0_CAUSE].value &= ~0xFF00;
 
-                if (config.debug_logging) printf("Interrupt at PC: 0x%x\n", (uint32_t)regs.PC.value);
+                if (config.debug_logging) printf("Interrupt at PC: 0x%x\n", (uint32_t)r4300.regs.PC.value);
 
-                regs.PC.value = (uint32_t)((regs.COP0[COP0_STATUS].value & 0b10000000000000000000000) > 0) ? 0xBFC00380 : 0x80000180;
+                r4300.regs.PC.value = (uint32_t)((r4300.regs.COP0[COP0_STATUS].value & 0b10000000000000000000000) > 0) ? 0xBFC00380 : 0x80000180;
             }
         }
     }

@@ -14,7 +14,7 @@ void PI_WR_LEN_WRITE_EVENT(uint64_t value, uint32_t addr)
 {
     memory_memcpy(bswap_32(PI_DRAM_ADDR_REG_RW), bswap_32(PI_CART_ADDR_REG_RW), (uint32_t)value + 1);
 
-    PI_STATUS_REG_R &= bswap_32(0b1110); // Clear DMA Busy
+    PI_STATUS_REG_R &= bswap_32(~0b0001); // Clear DMA Busy
 
     if (config.debug_logging) printf("PIDMA: Type: Write, DMA Length: 0x%x, Cart Address: 0x%x, DRAM Address: 0x%x\n", (uint32_t)value + 1, bswap_32(PI_CART_ADDR_REG_RW), bswap_32(PI_DRAM_ADDR_REG_RW));
 }
@@ -93,6 +93,17 @@ void VI_CURRENT_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
 {
     MI_INTR_REG_R &= ~(bswap_32(0x08)); // Clear the VI Interrupt
     VI_CURRENT_REG_W = 0;
+}
+
+void AI_DRAM_ADDR_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
+{
+    invoke_mi_interrupt(MI_INTR_AI);
+}
+
+void AI_STATUS_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
+{
+    MI_INTR_REG_R &= ~(bswap_32(0x04)); // Clear the AI Interrupt
+    AI_STATUS_REG_W = 0;
 }
 
 void memory_init(void* ROM, size_t ROM_size)
@@ -532,7 +543,7 @@ void memory_init(void* ROM, size_t ROM_size)
     mem_entries[i].mem_block_write = &AI_DRAM_ADDR_REG_W;
     mem_entries[i].RW              = false;
     mem_entries[i].should_free     = false;
-    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].write_callback  = AI_DRAM_ADDR_REG_WRITE_EVENT;
     mem_entries[i].read_callback   = NULL;
     mem_entries[i].set = true;
     ++i;
@@ -565,7 +576,7 @@ void memory_init(void* ROM, size_t ROM_size)
     mem_entries[i].mem_block_write = &AI_STATUS_REG_W;
     mem_entries[i].RW              = false;
     mem_entries[i].should_free     = false;
-    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].write_callback  = AI_STATUS_REG_WRITE_EVENT;
     mem_entries[i].read_callback   = NULL;
     mem_entries[i].set = true;
     ++i;
@@ -792,7 +803,7 @@ void memory_cleanup(void)
     }
 }
 
-__attribute__((__always_inline__)) static inline mementry_t* GetMementry(uint32_t addr, bool store)
+__attribute__((__always_inline__)) static inline mementry_t* get_mementry(uint32_t addr, bool store)
 {
     uint32_t real_address = addr & 0x1FFFFFFF;
 
@@ -814,19 +825,19 @@ __attribute__((__always_inline__)) static inline mementry_t* GetMementry(uint32_
     return NULL;
 }
 
-__attribute__((__always_inline__)) static inline void NoentryError(uint32_t addr, bool store)
+__attribute__((__always_inline__)) static inline void no_entry_error(uint32_t addr, bool store)
 {
-    fprintf(stderr, "ERROR: Unmapped Memory Address at 0x%x!  PC: 0x%x, Read/Write: %s\n", addr, (uint32_t)regs.PC.value, store ? "Write" : "Read");
+    fprintf(stderr, "ERROR: Unmapped Memory Address at 0x%x!  PC: 0x%x, Read/Write: %s\n", addr, (uint32_t)r4300.regs.PC.value, store ? "Write" : "Read");
     if ((addr & 0xC0000000) == 0x80000000) is_running = false;
 }
 
-__attribute__((__always_inline__)) static inline int GetFinalTranslation(uint32_t addr, mementry_t** entry, size_t* index, bool store)
+__attribute__((__always_inline__)) static inline int get_final_translation(uint32_t addr, mementry_t** entry, size_t* index, bool store)
 {
     uint32_t non_cached_addr = TLB_translate_address(addr);
-    *entry = GetMementry(non_cached_addr, store);
+    *entry = get_mementry(non_cached_addr, store);
     if (!(*entry))
     {
-        NoentryError(addr, true);
+        no_entry_error(addr, true);
         return 1;
     }
     non_cached_addr &= 0x1FFFFFFF;
@@ -838,7 +849,7 @@ void write_uint8(uint8_t value, uint32_t addr)
 {
     mementry_t* entry;
     size_t index;
-    if (GetFinalTranslation(addr, &entry, &index, true) != 0) return;
+    if (get_final_translation(addr, &entry, &index, true) != 0) return;
 
     if (entry->mem_block_write)
     {
@@ -851,7 +862,7 @@ uint8_t read_uint8(uint32_t addr)
 {
     mementry_t* entry;
     size_t index;
-    if (GetFinalTranslation(addr, &entry, &index, false) != 0) return 0;
+    if (get_final_translation(addr, &entry, &index, false) != 0) return 0;
     
     if (entry->mem_block_read)
     {
@@ -866,7 +877,7 @@ void write_uint16(uint16_t value, uint32_t addr)
 {
     mementry_t* entry;
     size_t index;
-    if (GetFinalTranslation(addr, &entry, &index, true) != 0) return;
+    if (get_final_translation(addr, &entry, &index, true) != 0) return;
 
     if (entry->mem_block_write)
     {
@@ -879,7 +890,7 @@ uint16_t read_uint16(uint32_t addr)
 {
     mementry_t* entry;
     size_t index;
-    if (GetFinalTranslation(addr, &entry, &index, false) != 0) return 0;
+    if (get_final_translation(addr, &entry, &index, false) != 0) return 0;
 
     if (entry->mem_block_read)
     {
@@ -894,7 +905,7 @@ void write_uint32(uint32_t value, uint32_t addr)
 {
     mementry_t* entry;
     size_t index;
-    if (GetFinalTranslation(addr, &entry, &index, true) != 0) return;
+    if (get_final_translation(addr, &entry, &index, true) != 0) return;
 
     if (entry->mem_block_write)
     {
@@ -907,7 +918,7 @@ uint32_t read_uint32(uint32_t addr)
 {
     mementry_t* entry;
     size_t index;
-    if (GetFinalTranslation(addr, &entry, &index, false) != 0) return 0;
+    if (get_final_translation(addr, &entry, &index, false) != 0) return 0;
 
     if (entry->mem_block_read)
     {
@@ -922,7 +933,7 @@ void write_uint64(uint64_t value, uint32_t addr)
 {
     mementry_t* entry;
     size_t index;
-    if (GetFinalTranslation(addr, &entry, &index, true) != 0) return;
+    if (get_final_translation(addr, &entry, &index, true) != 0) return;
 
     if (entry->mem_block_write)
     {
@@ -935,7 +946,7 @@ uint64_t read_uint64(uint32_t addr)
 {
     mementry_t* entry;
     size_t index;
-    if (GetFinalTranslation(addr, &entry, &index, false) != 0) return 0;
+    if (get_final_translation(addr, &entry, &index, false) != 0) return 0;
 
     if (entry->mem_block_read)
     {
@@ -953,8 +964,8 @@ void memory_memcpy(uint32_t dest, uint32_t source, size_t length)
     size_t dst_index = 0;
     size_t src_index = 0;
 
-    if (GetFinalTranslation(dest,   &dst_entry, &dst_index, true)  != 0) return;
-    if (GetFinalTranslation(source, &src_entry, &src_index, false) != 0) return;
+    if (get_final_translation(dest,   &dst_entry, &dst_index, true)  != 0) return;
+    if (get_final_translation(source, &src_entry, &src_index, false) != 0) return;
 
     memcpy(((uint8_t*)dst_entry->mem_block_write) + dst_index, ((uint8_t*)src_entry->mem_block_read) + src_index, length);
 }
@@ -964,7 +975,7 @@ void* get_real_memory_loc(uint32_t addr)
     void* res = NULL;
 
     uint32_t non_cached_addr = TLB_translate_address(addr);
-    mementry_t* entry = GetMementry(non_cached_addr, false);
+    mementry_t* entry = get_mementry(non_cached_addr, false);
     if (!entry)
         return NULL;
     non_cached_addr &= 0x1FFFFFFF;

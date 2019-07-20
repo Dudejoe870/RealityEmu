@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#define MI_INTR_AI 2
 #define MI_INTR_VI 3
 #define MI_INTR_DP 5
 

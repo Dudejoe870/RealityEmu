@@ -2,7 +2,7 @@
 
 #include "common.h"
 
-__attribute__((__always_inline__)) static inline void undefined_inst_error(uint64_t value)
+__attribute__((__always_inline__)) static inline void RDP_undefined_inst_error(uint64_t value)
 {
     fprintf(stderr, "ERROR: Unimplemented RDP command 0x%lx!  RDP PC: 0x%x, RDP Start: 0x%x, RDP End: 0x%x\n", value, bswap_32(DPC_CURRENT_REG_R), bswap_32(DPC_START_REG_RW), bswap_32(DPC_END_REG_RW));
     is_running = false;
@@ -34,7 +34,7 @@ void RDP_step(void)
 
     if (command.interpret == NULL && inst != 0) 
     {
-        undefined_inst_error(inst);
+        RDP_undefined_inst_error(inst);
         return;
     }
 

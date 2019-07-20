@@ -6,6 +6,10 @@ void opcode_table_init(void)
     opcode_table[0b000001].interpret = &REGIMM;
     opcode_table[0b010000].interpret = &COP0;
     opcode_table[0b010001].interpret = &COP1;
+    opcode_table[0b110101].interpret = &LDC1;
+    opcode_table[0b110001].interpret = &LWC1;
+    opcode_table[0b111101].interpret = &SDC1;
+    opcode_table[0b111001].interpret = &SWC1;
     
     opcode_table[0b001000].interpret = &ADDI;
     opcode_table[0b001001].interpret = &ADDIU;
