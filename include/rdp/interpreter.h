@@ -13,6 +13,7 @@ void cmd_TextureRectangle(uint64_t value);
 void cmd_SetCombineMode  (uint64_t value);
 void cmd_SetOtherModes   (uint64_t value);
 void cmd_SetPrimColor    (uint64_t value);
+void cmd_SetBlendColor   (uint64_t value);
 void cmd_SetFillColor    (uint64_t value);
 void cmd_SetScissor      (uint64_t value);
 void cmd_SyncFull        (uint64_t value);

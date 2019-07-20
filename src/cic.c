@@ -54,7 +54,7 @@ uint32_t CRC32(uint32_t base, size_t size)
 
 uint32_t get_CIC_seed(void)
 {
-    uint32_t CRC        = CRC32(0x10000040, 0xFC0);
+    uint32_t CRC         = CRC32(0x10000040, 0xFC0);
     uint32_t aleck64_CRC = CRC32(0x10000040, 0xBC0);
 
     if (aleck64_CRC == CRC_NUS_5101) return CIC_SEED_NUS_5101;

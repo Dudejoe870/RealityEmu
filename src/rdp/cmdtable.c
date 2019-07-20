@@ -12,6 +12,7 @@ void RDP_CMDtable_init(void)
     CMDtable[0x3c].interpret = &cmd_SetCombineMode;
     CMDtable[0x2f].interpret = &cmd_SetOtherModes;
     CMDtable[0x3a].interpret = &cmd_SetPrimColor;
+    CMDtable[0x39].interpret = &cmd_SetBlendColor;
     CMDtable[0x37].interpret = &cmd_SetFillColor;
     CMDtable[0x2d].interpret = &cmd_SetScissor;
     CMDtable[0x29].interpret = &cmd_SyncFull;

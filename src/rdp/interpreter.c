@@ -248,6 +248,15 @@ void cmd_SetPrimColor(uint64_t value)
     add_PC(8);
 }
 
+void cmd_SetBlendColor(uint64_t value)
+{
+    curr_blendcolor.red   = (value & 0x00000000FF000000) >> 24;
+    curr_blendcolor.green = (value & 0x0000000000FF0000) >> 16;
+    curr_blendcolor.blue  = (value & 0x000000000000FF00) >> 8;
+    curr_blendcolor.alpha = (value & 0x00000000000000FF);
+    add_PC(8);
+}
+
 void cmd_SetScissor(uint64_t value)
 {
     scissor_border.border.XH = (value & 0x00FFF00000000000) >> 44;

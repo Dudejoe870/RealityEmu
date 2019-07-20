@@ -37,10 +37,10 @@ __attribute__((__always_inline__)) static inline void convert_16_32(rgbacolor_t*
     float _b = (float)b / 31;
     float _a = (float)a;
 
-    out->red   = (uint8_t)(_r * 255);
-    out->green = (uint8_t)(_g * 255);
-    out->blue  = (uint8_t)(_b * 255);
-    out->alpha = (uint8_t)(_a * 255);
+    out->red   = (uint8_t)(ceilf(_r * 255));
+    out->green = (uint8_t)(ceilf(_g * 255));
+    out->blue  = (uint8_t)(ceilf(_b * 255));
+    out->alpha = (uint8_t)(ceilf(_a * 255));
 }
 
 __attribute__((__always_inline__)) static inline void set_pixel_32(uint32_t x, uint32_t y, uint32_t packed_color)
@@ -418,15 +418,32 @@ void fill_rect(rect_t* rect)
     uint32_t rect_x1 = (uint32_t)(rect->XH >> 2);
     uint32_t rect_y1 = (uint32_t)(rect->YH >> 2);
     uint32_t rect_x2 = (uint32_t)(rect->XL >> 2) + 1;
-    uint32_t rect_y2 = (uint32_t)(rect->YL >> 2);
-
-    if (othermodes.cycle_type == CYCLE_FILL)
+    uint32_t rect_y2 = (uint32_t)(rect->YL >> 2) + 1;
+    
+    for (uint32_t y = rect_y1; y < rect_y2; ++y)
     {
-        for (uint32_t y = rect_y1; y < rect_y2; ++y)
+        for (uint32_t x = rect_x1; x < rect_x2; ++x)
         {
-            for (uint32_t x = rect_x1; x < rect_x2; ++x)
+            if (othermodes.cycle_type == CYCLE_FILL)
             {
                 set_pixel_32(x, y, fill_color); // For packed 16-bit colors.
+            }
+            else if (othermodes.cycle_type == CYCLE_1 || othermodes.cycle_type == CYCLE_2)
+            {
+                cccolorin_t cc_colors;
+                cc_colors.combined     = NULL;
+                cc_colors.shade_color  = NULL;
+                cc_colors.texel0_color = NULL;
+                cc_colors.texel1_color = NULL;
+
+                blcolorin_t bl_colors;
+                bl_colors.shade_color = NULL;
+                rgbacolor_t mem_color = get_pixel(x, y);
+                bl_colors.mem_color   = &mem_color;
+                bl_colors.combined    = NULL;
+
+                uint32_t color = process_pixel(cc_colors, bl_colors);
+                set_pixel(x, y, color);
             }
         }
     }

@@ -1,4 +1,4 @@
-#include "r4300/cpu.h"
+#include "r4300/r4300.h"
 
 #include "common.h"
 

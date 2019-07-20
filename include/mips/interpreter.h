@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "r4300/cpu.h"
+#include "mips/cpu.h"
 
 extern bool is_branching;
 extern uint64_t all_cycles;

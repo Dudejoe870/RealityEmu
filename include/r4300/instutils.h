@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "r4300/cpu.h"
+#include "r4300/r4300.h"
 
 #define INST_OP_MSK     0b11111100000000000000000000000000
 #define INST_RS_MSK     0b00000011111000000000000000000000

@@ -6,9 +6,10 @@
 #include "config.h"
 #include "window.h"
 
+#include "mips/cpu.h"
 #include "mips/interpreter.h"
 
-#include "r4300/cpu.h"
+#include "r4300/r4300.h"
 #include "r4300/debug.h"
 #include "r4300/exception.h"
 #include "r4300/instutils.h"

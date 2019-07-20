@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "r4300/cpu.h"
+#include "r4300/r4300.h"
 
 typedef struct
 {

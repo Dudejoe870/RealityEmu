@@ -120,7 +120,7 @@ void get_blinput_val(blinput_t in, blcolorin_t colors, rgbacolor_t* out, rgbacol
             }
             return;
         case BL_1:
-            memset(out, 1, sizeof(rgbacolor_t));
+            memset(out, 255, sizeof(rgbacolor_t));
             return;
         case BL_0:
             memset(out, 0, sizeof(rgbacolor_t));
@@ -146,8 +146,8 @@ rgbacolor_t get_bl_color(blcolorin_t colors, uint8_t cycle)
     blinput_t M = get_bl_m(cycle);
     blinput_t B = get_bl_b(cycle);
 
-    //printf("(%s * %s + %s * %s) / (%s + %s)\n", 
-            //blinput_names[A], blinput_names[P], blinput_names[B], blinput_names[M], blinput_names[A], blinput_names[B]);
+    //printf("Blender = (%s * %s + %s * %s) / (%s + %s)\n", 
+    //        blinput_names[A], blinput_names[P], blinput_names[B], blinput_names[M], blinput_names[A], blinput_names[B]);
     //printf("m1a: %u (%s), m1b: %u (%s), m2a: %u (%s), m2b: %u (%s)\n", othermodes.b_m1a_0, blinput_names[P], othermodes.b_m1b_0, blinput_names[A], othermodes.b_m2a_0, blinput_names[M], othermodes.b_m2b_0, blinput_names[B]);
 
     get_blinput_val(P, colors, &rgba_P, NULL);
@@ -155,10 +155,10 @@ rgbacolor_t get_bl_color(blcolorin_t colors, uint8_t cycle)
     get_blinput_val(M, colors, &rgba_M, NULL);
     get_blinput_val(B, colors, &rgba_B, &rgba_A);
 
-    res.red   = (rgba_A.red   * rgba_P.red   + rgba_B.red   * rgba_M.red)   / (rgba_A.red   + rgba_B.red);
-    res.green = (rgba_A.green * rgba_P.green + rgba_B.green * rgba_M.green) / (rgba_A.green + rgba_B.green);
-    res.blue  = (rgba_A.blue  * rgba_P.blue  + rgba_B.blue  * rgba_M.blue)  / (rgba_A.blue  + rgba_B.blue);
-    res.alpha = (rgba_A.alpha * rgba_P.alpha + rgba_B.alpha * rgba_M.alpha) / (rgba_A.alpha + rgba_B.alpha);
+    res.red   = ((rgba_A.red   * rgba_P.red)   / 255) + (rgba_B.red   * rgba_M.red)   / (rgba_A.red   + rgba_B.red);
+    res.green = ((rgba_A.green * rgba_P.green) / 255) + (rgba_B.green * rgba_M.green) / (rgba_A.green + rgba_B.green);
+    res.blue  = ((rgba_A.blue  * rgba_P.blue)  / 255) + (rgba_B.blue  * rgba_M.blue)  / (rgba_A.blue  + rgba_B.blue);
+    res.alpha = ((rgba_A.alpha * rgba_P.alpha) / 255) + (rgba_B.alpha * rgba_M.alpha) / (rgba_A.alpha + rgba_B.alpha);
 
     return res;
 }

@@ -5,13 +5,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
-typedef struct
-{
-    uint64_t value;
-
-    void (*write_callback)(void);
-    void (*read_callback)(void);
-} reg_t;
+#include "mips/cpu.h"
 
 #define COP0_INDEX       0
 #define COP0_RANDOM      1
@@ -38,30 +32,6 @@ typedef struct
 #define COP0_TAGLO       28
 #define COP0_TAGHI       29
 #define COP0_ERROREPC    30
-
-typedef struct
-{
-    reg_t GPR[32];
-    reg_t FPR[32]; // 0: FCR0 (32-bit), 31: FCR31 (32-bit)
-    reg_t COP0[32];
-    reg_t PC;
-    reg_t HI;
-    reg_t LO;
-    bool  LLbit;
-    bool  COC1;
-} regs_t;
-
-typedef struct
-{
-    regs_t regs;
-    bool is_branching;
-
-    uint32_t curr_target;
-
-    uint8_t  curr_inst_cycles;
-    uint64_t cycles;
-    uint64_t all_cycles;
-} cpu_t;
 
 cpu_t r4300;
 
