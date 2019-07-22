@@ -2,19 +2,16 @@
 
 #include "common.h"
 
-#include "SDL2/SDL.h"
-
 uint32_t current_scanline = 0;
-uint32_t vi_cycle_count   = 0;
 
-void interp_step(void)
+__attribute__((__always_inline__)) static inline void CPU_interp_step(void)
 {
     bool should_branch = r4300.is_branching;
 
     uint32_t inst = bswap_32(*(uint32_t*)get_real_memory_loc((uint32_t)r4300.regs.PC.value));
-    opcode_t op   = opcode_table[INST_OP(inst)];
+    opcode_t op   = CPU_opcode_table[INST_OP(inst)];
 
-    if (op.interpret == NULL) 
+    if (op.interpret == NULL)
     {
         MIPS_undefined_inst_error(inst, &r4300);
         return;
@@ -29,23 +26,15 @@ void interp_step(void)
         r4300.cycles = 0;
     }
 
-    if (vi_cycle_count >= (uint32_t)((CPU_mhz * 1000000) / config.refresh_rate))
-    {
-        if (current_scanline >= (bswap_32(VI_V_SYNC_REG_RW) & 0x3FF)) current_scanline = 0;
-        else ++current_scanline;
-        if (current_scanline == bswap_32(VI_INTR_REG_RW))
-            invoke_mi_interrupt(MI_INTR_VI);
-        VI_CURRENT_REG_R = bswap_32(current_scanline);
-
-        vi_cycle_count = 0;
-    }
+    if (current_scanline >= (bswap_32(VI_V_SYNC_REG_RW) & 0x3FF)) current_scanline = 0; // Technically isn't correct timing
+    else ++current_scanline;                                                            // but this is just here to make things work.
+    VI_CURRENT_REG_R = bswap_32(current_scanline);
 
     r4300.curr_inst_cycles = 1;
     op.interpret(inst, &r4300);
 
     r4300.cycles     += r4300.curr_inst_cycles;
     r4300.all_cycles += r4300.curr_inst_cycles;
-    vi_cycle_count   += r4300.curr_inst_cycles;
 
     r4300.regs.COP0[COP0_COUNT].value = (uint32_t)(r4300.cycles >> 1);
     if (r4300.regs.COP0[COP0_RANDOM].value < r4300.regs.COP0[COP0_WIRED].value 
@@ -67,7 +56,7 @@ void interp_step(void)
 void* CPU_run(void* vargp)
 {
     while (is_running)
-        interp_step();
+        CPU_interp_step();
     return NULL;
 }
 
@@ -79,6 +68,8 @@ void COP0_WIRED_REG_WRITE_EVENT(void)
 void CPU_init(void* ROM, size_t ROM_size)
 {
     memory_init(ROM, ROM_size);
+
+    r4300.rsp = false;
 
     uint32_t rom_type   = (uint32_t)ROM_GAMEPACK;
     uint32_t reset_type = 0;
@@ -136,7 +127,7 @@ void CPU_init(void* ROM, size_t ROM_size)
     RDRAM_DELAY_REG        = bswap_32(0x2B3B1A0B);
     RDRAM_RAS_INTERVAL_REG = bswap_32(0x101C0A04);
 
-    opcode_table_init();
+    CPU_opcode_table_init();
 
     is_running = true;
 
@@ -145,6 +136,7 @@ void CPU_init(void* ROM, size_t ROM_size)
     pthread_create(&CPU_thread, NULL, CPU_run, NULL);
 
     RDP_init();
+    RSP_init();
 }
 
 void CPU_cleanup(void)

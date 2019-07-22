@@ -6,7 +6,8 @@
         "ratio": "c",
         "system_error": "c",
         "type_traits": "c",
-        "valarray": "c"
+        "valarray": "c",
+        "common.h": "c"
     },
     "C_Cpp.default.cStandard": "c11",
     "C_Cpp.default.intelliSenseMode": "gcc-x64"

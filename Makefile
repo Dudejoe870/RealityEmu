@@ -1,7 +1,7 @@
 TARGET_DIR = build
 TARGET = $(TARGET_DIR)/reality-emu
 
-DIRS = src src/r4300 src/rdp src/mips
+DIRS = src src/mips src/r4300 src/rdp src/rsp
 
 CFILES = $(foreach DIR,$(DIRS),$(wildcard $(DIR)/*.c))
 COBJFILES = $(CFILES:%.c=%.o)

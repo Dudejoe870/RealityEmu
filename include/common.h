@@ -25,6 +25,9 @@
 #include "rdp/rdp.h"
 #include "rdp/software_rasterizer.h"
 
+#include "rsp/opcodetable.h"
+#include "rsp/rsp.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>

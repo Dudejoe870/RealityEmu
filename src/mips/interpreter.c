@@ -292,130 +292,272 @@ __attribute__((__always_inline__)) static inline void AND(uint32_t value, cpu_t*
 
 __attribute__((__always_inline__)) static inline void BREAK(uint32_t value, cpu_t* cpu)
 {
-    invoke_break();
+    if (cpu->rsp)
+    {
+        SP_STATUS_REG_R |= bswap_32(0x00000002 | 0x00000001); // Set the broke and halt flags.
+        if (bswap_32(SP_STATUS_REG_R) & 0x00000040)
+            invoke_mi_interrupt(MI_INTR_SP);
+    }
+    else
+    {
+        invoke_break();
+    }
     advance_PC(cpu);
 }
 
 __attribute__((__always_inline__)) static inline void DADD(uint32_t value, cpu_t* cpu)
 {
-    // TODO: Correctly check for Overflow and Underflow and throw the exceptions accordingly.
-    DADD_reg(INST_RS(value), INST_RT(value), INST_RD(value), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        // TODO: Correctly check for Overflow and Underflow and throw the exceptions accordingly.
+        DADD_reg(INST_RS(value), INST_RT(value), INST_RD(value), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DADDU(uint32_t value, cpu_t* cpu)
 {
-    DADD_reg(INST_RS(value), INST_RT(value), INST_RD(value), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DADD_reg(INST_RS(value), INST_RT(value), INST_RD(value), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DDIV(uint32_t value, cpu_t* cpu)
 {
-    DDIV_reg(INST_RS(value), INST_RT(value), cpu);
-    cpu->curr_inst_cycles = 69;
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DDIV_reg(INST_RS(value), INST_RT(value), cpu);
+        cpu->curr_inst_cycles = 69;
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DDIVU(uint32_t value, cpu_t* cpu)
 {
-    DDIVU_reg(INST_RS(value), INST_RT(value), cpu);
-    cpu->curr_inst_cycles = 69;
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DDIVU_reg(INST_RS(value), INST_RT(value), cpu);
+        cpu->curr_inst_cycles = 69;
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DIV(uint32_t value, cpu_t* cpu)
 {
-    DIV_reg(INST_RS(value), INST_RT(value), cpu);
-    cpu->curr_inst_cycles = 37;
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DIV_reg(INST_RS(value), INST_RT(value), cpu);
+        cpu->curr_inst_cycles = 37;
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DIVU(uint32_t value, cpu_t* cpu)
 {
-    DIVU_reg(INST_RS(value), INST_RT(value), cpu);
-    cpu->curr_inst_cycles = 37;
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DIVU_reg(INST_RS(value), INST_RT(value), cpu);
+        cpu->curr_inst_cycles = 37;
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DMULT(uint32_t value, cpu_t* cpu)
 {
-    DMULT_reg(INST_RS(value), INST_RT(value), cpu);
-    cpu->curr_inst_cycles = 8;
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DMULT_reg(INST_RS(value), INST_RT(value), cpu);
+        cpu->curr_inst_cycles = 8;
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DMULTU(uint32_t value, cpu_t* cpu)
 {
-    DMULTU_reg(INST_RS(value), INST_RT(value), cpu);
-    cpu->curr_inst_cycles = 8;
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DMULTU_reg(INST_RS(value), INST_RT(value), cpu);
+        cpu->curr_inst_cycles = 8;
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DSLL(uint32_t value, cpu_t* cpu)
 {
-    DSLL_imm(INST_RT(value), INST_RD(value), INST_SA(value), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DSLL_imm(INST_RT(value), INST_RD(value), INST_SA(value), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DSLLV(uint32_t value, cpu_t* cpu)
 {
-    DSLL_reg(INST_RT(value), INST_RS(value), INST_RD(value), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DSLL_reg(INST_RT(value), INST_RS(value), INST_RD(value), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DSLL32(uint32_t value, cpu_t* cpu)
 {
-    DSLL_imm(INST_RT(value), INST_RD(value), INST_SA(value) + 32, cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DSLL_imm(INST_RT(value), INST_RD(value), INST_SA(value) + 32, cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DSRA(uint32_t value, cpu_t* cpu)
 {
-    DSRA_imm(INST_RT(value), INST_RD(value), INST_SA(value), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DSRA_imm(INST_RT(value), INST_RD(value), INST_SA(value), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DSRAV(uint32_t value, cpu_t* cpu)
 {
-    DSRA_reg(INST_RT(value), INST_RS(value), INST_RD(value), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DSRA_reg(INST_RT(value), INST_RS(value), INST_RD(value), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DSRA32(uint32_t value, cpu_t* cpu)
 {
-    DSRA_imm(INST_RT(value), INST_RD(value), INST_SA(value) + 32, cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DSRA_imm(INST_RT(value), INST_RD(value), INST_SA(value) + 32, cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DSRL(uint32_t value, cpu_t* cpu)
 {
-    DSRL_imm(INST_RT(value), INST_RD(value), INST_SA(value), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DSRL_imm(INST_RT(value), INST_RD(value), INST_SA(value), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DSRLV(uint32_t value, cpu_t* cpu)
 {
-    DSRL_reg(INST_RT(value), INST_RS(value), INST_RD(value), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DSRL_reg(INST_RT(value), INST_RS(value), INST_RD(value), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DSRL32(uint32_t value, cpu_t* cpu)
 {
-    DSRL_imm(INST_RT(value), INST_RD(value), INST_SA(value) + 32, cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DSRL_imm(INST_RT(value), INST_RD(value), INST_SA(value) + 32, cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DSUB(uint32_t value, cpu_t* cpu)
 {
-    // TODO: Correctly check for Overflow and Underflow and throw the exceptions accordingly.
-    DSUB_reg(INST_RS(value), INST_RT(value), INST_RD(value), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        // TODO: Correctly check for Overflow and Underflow and throw the exceptions accordingly.
+        DSUB_reg(INST_RS(value), INST_RT(value), INST_RD(value), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void DSUBU(uint32_t value, cpu_t* cpu)
 {
-    DSUB_reg(INST_RS(value), INST_RT(value), INST_RD(value), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        DSUB_reg(INST_RS(value), INST_RT(value), INST_RD(value), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void JALR(uint32_t value, cpu_t* cpu)
@@ -433,40 +575,82 @@ __attribute__((__always_inline__)) static inline void JR(uint32_t value, cpu_t* 
 
 __attribute__((__always_inline__)) static inline void MFHI(uint32_t value, cpu_t* cpu)
 {
-    write_GPR(read_HI(cpu), INST_RD(value), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        write_GPR(read_HI(cpu), INST_RD(value), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void MFLO(uint32_t value, cpu_t* cpu)
 {
-    write_GPR(read_LO(cpu), INST_RD(value), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        write_GPR(read_LO(cpu), INST_RD(value), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void MTHI(uint32_t value, cpu_t* cpu)
 {
-    write_HI(read_GPR(INST_RS(value), cpu), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        write_HI(read_GPR(INST_RS(value), cpu), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void MTLO(uint32_t value, cpu_t* cpu)
 {
-    write_LO(read_GPR(INST_RS(value), cpu), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        write_LO(read_GPR(INST_RS(value), cpu), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void MULT(uint32_t value, cpu_t* cpu)
 {
-    MULT_reg(INST_RS(value), INST_RT(value), cpu);
-    cpu->curr_inst_cycles = 5;
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        MULT_reg(INST_RS(value), INST_RT(value), cpu);
+        cpu->curr_inst_cycles = 5;
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void MULTU(uint32_t value, cpu_t* cpu)
 {
-    MULTU_reg(INST_RS(value), INST_RT(value), cpu);
-    cpu->curr_inst_cycles = 5;
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        MULTU_reg(INST_RS(value), INST_RT(value), cpu);
+        cpu->curr_inst_cycles = 5;
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void NOR(uint32_t value, cpu_t* cpu)
@@ -544,38 +728,80 @@ __attribute__((__always_inline__)) static inline void SUBU(uint32_t value, cpu_t
 
 __attribute__((__always_inline__)) static inline void TEQ(uint32_t value, cpu_t* cpu)
 {
-    TRAP_cond((uint32_t)read_GPR(INST_RS(value), cpu) == (uint32_t)read_GPR(INST_RT(value), cpu), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        TRAP_cond((uint32_t)read_GPR(INST_RS(value), cpu) == (uint32_t)read_GPR(INST_RT(value), cpu), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void TGE(uint32_t value, cpu_t* cpu)
 {
-    TRAP_cond((int)read_GPR(INST_RS(value), cpu) >= (int)read_GPR(INST_RT(value), cpu), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        TRAP_cond((int)read_GPR(INST_RS(value), cpu) >= (int)read_GPR(INST_RT(value), cpu), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void TGEU(uint32_t value, cpu_t* cpu)
 {
-    TRAP_cond((uint32_t)read_GPR(INST_RS(value), cpu) >= (uint32_t)read_GPR(INST_RT(value), cpu), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        TRAP_cond((uint32_t)read_GPR(INST_RS(value), cpu) >= (uint32_t)read_GPR(INST_RT(value), cpu), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void TLT(uint32_t value, cpu_t* cpu)
 {
-    TRAP_cond((int)read_GPR(INST_RS(value), cpu) < (int)read_GPR(INST_RT(value), cpu), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        TRAP_cond((int)read_GPR(INST_RS(value), cpu) < (int)read_GPR(INST_RT(value), cpu), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void TLTU(uint32_t value, cpu_t* cpu)
 {
-    TRAP_cond((uint32_t)read_GPR(INST_RS(value), cpu) < (uint32_t)read_GPR(INST_RT(value), cpu), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        TRAP_cond((uint32_t)read_GPR(INST_RS(value), cpu) < (uint32_t)read_GPR(INST_RT(value), cpu), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void TNE(uint32_t value, cpu_t* cpu)
 {
-    TRAP_cond((uint32_t)read_GPR(INST_RS(value), cpu) != (uint32_t)read_GPR(INST_RT(value), cpu), cpu);
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        TRAP_cond((uint32_t)read_GPR(INST_RS(value), cpu) != (uint32_t)read_GPR(INST_RT(value), cpu), cpu);
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void XOR(uint32_t value, cpu_t* cpu)
@@ -718,7 +944,14 @@ void SPECIAL(uint32_t value, cpu_t* cpu)
             SUBU(value, cpu);
             return;
         case 0b001111: // SYNC
-            advance_PC(cpu); // Executes as a NOP on the VR4300.
+            if (cpu->rsp)
+            {
+                MIPS_undefined_inst_error(value, cpu);
+            }
+            else
+            {
+                advance_PC(cpu); // Executes as a NOP on the VR4300.
+            }
             return;
         case 0b110100: // TEQ
             TEQ(value, cpu);
@@ -1897,13 +2130,31 @@ void XORI(uint32_t value, cpu_t* cpu)
 
 void LB(uint32_t value, cpu_t* cpu)
 {
-    write_GPR((char)read_uint8((uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value)), INST_RT(value), cpu);
+    uint32_t addr = (uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value);
+    if (cpu->rsp)
+    {
+        if (addr > 0xFFF) write_GPR(0, INST_RT(value), cpu);
+        else write_GPR((char)((char*)SP_DMEM_RW)[addr & 0xFFF], INST_RT(value), cpu);
+    }
+    else
+    {
+        write_GPR((char)read_uint8(addr), INST_RT(value), cpu);
+    }
     advance_PC(cpu);
 }
 
 void LBU(uint32_t value, cpu_t* cpu)
 {
-    write_GPR((uint8_t)read_uint8((uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value)), INST_RT(value), cpu);
+    uint32_t addr = (uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value);
+    if (cpu->rsp)
+    {
+        if (addr > 0xFFF) write_GPR(0, INST_RT(value), cpu);
+        else write_GPR((uint8_t)((uint8_t*)SP_DMEM_RW)[addr & 0xFFF], INST_RT(value), cpu);
+    }
+    else
+    {
+        write_GPR((uint8_t)read_uint8(addr), INST_RT(value), cpu);
+    }
     advance_PC(cpu);
 }
 
@@ -1925,13 +2176,31 @@ void LDR(uint32_t value, cpu_t* cpu)
 
 void LH(uint32_t value, cpu_t* cpu)
 {
-    write_GPR((short)read_uint16((uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value)), INST_RT(value), cpu);
+    uint32_t addr = (uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value);
+    if (cpu->rsp)
+    {
+        if (addr > 0xFFF) write_GPR(0, INST_RT(value), cpu);
+        else write_GPR((short)bswap_16(*(short*)&(((uint8_t*)SP_DMEM_RW)[addr & 0xFFF])), INST_RT(value), cpu);
+    }
+    else
+    {
+        write_GPR((short)read_uint16(addr), INST_RT(value), cpu);
+    }
     advance_PC(cpu);
 }
 
 void LHU(uint32_t value, cpu_t* cpu)
 {
-    write_GPR((uint16_t)read_uint16((uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value)), INST_RT(value), cpu);
+    uint32_t addr = (uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value);
+    if (cpu->rsp)
+    {
+        if (addr > 0xFFF) write_GPR(0, INST_RT(value), cpu);
+        else write_GPR((uint16_t)bswap_16(*(uint16_t*)&(((uint8_t*)SP_DMEM_RW)[addr & 0xFFF])), INST_RT(value), cpu);
+    }
+    else
+    {
+        write_GPR((uint16_t)read_uint16(addr), INST_RT(value), cpu);
+    }
     advance_PC(cpu);
 }
 
@@ -1953,7 +2222,16 @@ void LUI(uint32_t value, cpu_t* cpu)
 
 void LW(uint32_t value, cpu_t* cpu)
 {
-    write_GPR((uint32_t)read_uint32((uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value)), INST_RT(value), cpu);
+    uint32_t addr = (uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value);
+    if (cpu->rsp)
+    {
+        if (addr > 0xFFF) write_GPR(0, INST_RT(value), cpu);
+        else write_GPR((uint32_t)bswap_16(*(uint32_t*)&(((uint8_t*)SP_DMEM_RW)[addr & 0xFFF])), INST_RT(value), cpu);
+    }
+    else
+    {
+        write_GPR((uint32_t)read_uint32(addr), INST_RT(value), cpu);
+    }
     advance_PC(cpu);
 }
 
@@ -1997,7 +2275,20 @@ void LWU(uint32_t value, cpu_t* cpu)
 
 void SB(uint32_t value, cpu_t* cpu)
 {
-    write_uint8(read_GPR(INST_RT(value), cpu), (uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value));
+    uint32_t addr = (uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value);
+    if (cpu->rsp)
+    {
+        if (addr > 0xFFF)
+        {
+            advance_PC(cpu);
+            return;
+        }
+        ((uint8_t*)SP_DMEM_RW)[addr & 0xFFF] = (uint8_t)read_GPR(INST_RT(value), cpu);
+    }
+    else
+    {
+        write_uint8(read_GPR(INST_RT(value), cpu), addr);
+    }
     advance_PC(cpu);
 }
 
@@ -2029,7 +2320,20 @@ void SDR(uint32_t value, cpu_t* cpu)
 
 void SH(uint32_t value, cpu_t* cpu)
 {
-    write_uint16(read_GPR(INST_RT(value), cpu), (uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value));
+    uint32_t addr = (uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value);
+    if (cpu->rsp)
+    {
+        if (addr > 0xFFF)
+        {
+            advance_PC(cpu);
+            return;
+        }
+        *((uint16_t*)&(((uint8_t*)SP_DMEM_RW)[addr & 0xFFF])) = (uint16_t)read_GPR(INST_RT(value), cpu);
+    }
+    else
+    {
+        write_uint16(read_GPR(INST_RT(value), cpu), addr);
+    }
     advance_PC(cpu);
 }
 
@@ -2047,7 +2351,20 @@ void SLTIU(uint32_t value, cpu_t* cpu)
 
 void SW(uint32_t value, cpu_t* cpu)
 {
-    write_uint32(read_GPR(INST_RT(value), cpu), read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value));
+    uint32_t addr = (uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value);
+    if (cpu->rsp)
+    {
+        if (addr > 0xFFF)
+        {
+            advance_PC(cpu);
+            return;
+        }
+        *((uint32_t*)&(((uint8_t*)SP_DMEM_RW)[addr & 0xFFF])) = (uint32_t)read_GPR(INST_RT(value), cpu);
+    }
+    else
+    {
+        write_uint32(read_GPR(INST_RT(value), cpu), addr);
+    }
     advance_PC(cpu);
 }
 

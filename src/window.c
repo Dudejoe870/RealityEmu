@@ -94,19 +94,28 @@ void* get_framebuffer_image(uint32_t* width, uint32_t* height, uint8_t* pixel_si
 
     uint8_t interlaced = ((vi_status & 0b1000000) >> 6) & 1;
 
-    for (size_t y = v_start_of_video; y < v_end_of_video; ++y)
+    for (size_t y = 0; y < (bswap_32(VI_V_SYNC_REG_RW) & 0x3FF); ++y)
     {
-        uint32_t line = (y - v_start_of_video) >> (~interlaced & 1);
-        uint32_t offset = pitch * line;
-
-        if (bytes_per_pixel == 4)
-            memcpy(frame_copy + offset, ((uint8_t*)framebuffer) + offset, pitch);
-        else
+        if (y == (bswap_32(VI_INTR_REG_RW) - 1))
         {
-            for (size_t end = offset + pitch; offset < end; offset += 2)
+            invoke_mi_interrupt(MI_INTR_VI);
+            ++VI_intrs;
+        }
+
+        if (y >= v_start_of_video && y < v_end_of_video)
+        {
+            uint32_t line = (y - v_start_of_video) >> (~interlaced & 1);
+            uint32_t offset = pitch * line;
+
+            if (bytes_per_pixel == 4)
+                memcpy(frame_copy + offset, ((uint8_t*)framebuffer) + offset, pitch);
+            else
             {
-                frame_copy[offset]     = ((uint8_t*)framebuffer)[offset + 1];
-                frame_copy[offset + 1] = ((uint8_t*)framebuffer)[offset];
+                for (size_t end = offset + pitch; offset < end; offset += 2)
+                {
+                    frame_copy[offset]     = ((uint8_t*)framebuffer)[offset + 1];
+                    frame_copy[offset + 1] = ((uint8_t*)framebuffer)[offset];
+                }
             }
         }
     }
@@ -153,14 +162,9 @@ int window_run(void)
         glEnd();
     }
 
-    char win_name[64];
-    strcpy(win_name, "RealityEmu - ");
-    strcat(win_name, header->name);
-    strcat(win_name, " CPU: ");
-    char mhz_str[64];
-    sprintf(mhz_str, "%.2f", (float)CPU_mhz);
-    strcat(win_name, mhz_str);
-    strcat(win_name, " MHz");
+    char win_name[1000];
+    sprintf(win_name, "Reality Emu - %s CPU: %.2f MHz, RSP: %.2f MHz%s, VI/s: %.2f", 
+                       header->name, (float)CPU_mhz, (float)RSP_mhz, (bswap_32(SP_STATUS_REG_R) & 1) ? " (halted)" : "", (float)VIs);
     SDL_SetWindowTitle(window, win_name);
 
     SDL_GL_SwapWindow(window);

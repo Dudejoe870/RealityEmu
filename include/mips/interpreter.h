@@ -5,11 +5,6 @@
 
 #include "mips/cpu.h"
 
-extern bool is_branching;
-extern uint64_t all_cycles;
-
-void interp_step(void); // Step the interpreter.
-
 // These cover multiple Instructions.
 void SPECIAL(uint32_t value, cpu_t* cpu);
 void REGIMM (uint32_t value, cpu_t* cpu);

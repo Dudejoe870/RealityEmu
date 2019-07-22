@@ -35,95 +35,11 @@
 
 cpu_t r4300;
 
-bool is_running;
-
 double CPU_mhz;
+
+double VIs; // I don't really know where else to store these?
+size_t VI_intrs;
 
 void CPU_init(void* ROM, size_t ROM_size);
 
 void CPU_cleanup(void);
-
-__attribute__((__always_inline__)) static inline void write_GPR(uint64_t value, uint8_t index, cpu_t* cpu)
-{
-    cpu->regs.GPR[index].value = value;
-    if (cpu->regs.GPR[index].write_callback) cpu->regs.GPR[index].write_callback();
-}
-
-__attribute__((__always_inline__)) static inline uint64_t read_GPR(uint8_t index, cpu_t* cpu)
-{
-    if (cpu->regs.GPR[index].read_callback) cpu->regs.GPR[index].read_callback();
-    return cpu->regs.GPR[index].value;
-}
-
-__attribute__((__always_inline__)) static inline void write_FPR(uint64_t value, uint8_t index, cpu_t* cpu)
-{
-    bool FR = (cpu->regs.COP0[COP0_STATUS].value & 0x04000000) > 0;
-
-    if (index & 1 && !FR) return;
-    
-    cpu->regs.FPR[index].value = value;
-    if (cpu->regs.FPR[index].write_callback) cpu->regs.FPR[index].write_callback();
-}
-
-__attribute__((__always_inline__)) static inline uint64_t read_FPR(uint8_t index, cpu_t* cpu)
-{
-    bool FR = (cpu->regs.COP0[COP0_STATUS].value & 0x04000000) > 0;
-
-    if (index & 1 && !FR) return 0;
-
-    if (cpu->regs.FPR[index].read_callback) cpu->regs.FPR[index].read_callback();
-    return cpu->regs.FPR[index].value;
-}
-
-__attribute__((__always_inline__)) static inline void write_COP0(uint64_t value, uint8_t index, cpu_t* cpu)
-{
-    cpu->regs.COP0[index].value = value;
-    if (cpu->regs.COP0[index].write_callback) cpu->regs.COP0[index].write_callback();
-}
-
-__attribute__((__always_inline__)) static inline uint64_t read_COP0(uint8_t index, cpu_t* cpu)
-{
-    if (cpu->regs.COP0[index].read_callback) cpu->regs.COP0[index].read_callback();
-    return cpu->regs.COP0[index].value;
-}
-
-__attribute__((__always_inline__)) static inline void write_PC(uint32_t value, cpu_t* cpu)
-{
-    cpu->regs.PC.value = (uint64_t)value;
-    if (cpu->regs.PC.write_callback) cpu->regs.PC.write_callback();
-}
-
-__attribute__((__always_inline__)) static inline uint32_t read_PC(cpu_t* cpu)
-{
-    if (cpu->regs.PC.read_callback) cpu->regs.PC.read_callback();
-    return cpu->regs.PC.value;
-}
-
-__attribute__((__always_inline__)) static inline void advance_PC(cpu_t* cpu)
-{
-    write_PC(read_PC(cpu) + 4, cpu);
-}
-
-__attribute__((__always_inline__)) static inline void write_HI(uint64_t value, cpu_t* cpu)
-{
-    cpu->regs.HI.value = value;
-    if (cpu->regs.HI.write_callback) cpu->regs.HI.write_callback();
-}
-
-__attribute__((__always_inline__)) static inline uint64_t read_HI(cpu_t* cpu)
-{
-    if (cpu->regs.HI.read_callback) cpu->regs.HI.read_callback();
-    return cpu->regs.HI.value;
-}
-
-__attribute__((__always_inline__)) static inline void write_LO(uint64_t value, cpu_t* cpu)
-{
-    cpu->regs.LO.value = value;
-    if (cpu->regs.LO.write_callback) cpu->regs.LO.write_callback();
-}
-
-__attribute__((__always_inline__)) static inline uint64_t read_LO(cpu_t* cpu)
-{
-    if (cpu->regs.LO.read_callback) cpu->regs.LO.read_callback();
-    return cpu->regs.LO.value;
-}

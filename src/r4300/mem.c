@@ -4,6 +4,125 @@
 
 void* framebuffer_addr = NULL;
 
+void SP_STATUS_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
+{
+    if ((value & 0x0001) > 0) // Clear halt
+    {
+        SP_STATUS_REG_R &= ~(bswap_32(0x01));
+    }
+    else if ((value & 0x0002) > 0) // Set halt
+    {
+        SP_STATUS_REG_R |= bswap_32(0x01);
+    }
+
+    if ((value & 0x0004) > 0) // Clear broke
+    {
+        SP_STATUS_REG_R &= ~(bswap_32(0x02));
+    }
+
+    if ((value & 0x0008) > 0) // Clear intr
+    {
+        MI_INTR_REG_R &= ~(bswap_32(1 << MI_INTR_SP));
+    }
+    else if ((value & 0x0010) > 0) // Set intr
+    {
+        invoke_mi_interrupt(MI_INTR_SP);
+    }
+
+    if ((value & 0x0020) > 0) // Clear sstep
+    {
+        SP_STATUS_REG_R &= ~(bswap_32(0x20));
+    }
+    else if ((value & 0x0040) > 0) // Set sstep
+    {
+        SP_STATUS_REG_R |= bswap_32(0x20);
+    }
+
+    if ((value & 0x0080) > 0) // Clear intr on break
+    {
+        SP_STATUS_REG_R &= ~(bswap_32(0x40));
+    }
+    else if ((value & 0x0100) > 0) // Set intr on break
+    {
+        SP_STATUS_REG_R |= bswap_32(0x40);
+    }
+
+    if ((value & 0x0200) > 0) // Clear signal 0
+    {
+        SP_STATUS_REG_R &= ~(bswap_32(0x80));
+    }
+    else if ((value & 0x0400) > 0) // Set signal 0
+    {
+        SP_STATUS_REG_R |= bswap_32(0x80);
+    }
+
+    if ((value & 0x0800) > 0) // Clear signal 1
+    {
+        SP_STATUS_REG_R &= ~(bswap_32(0x100));
+    }
+    else if ((value & 0x1000) > 0) // Set signal 1
+    {
+        SP_STATUS_REG_R |= bswap_32(0x100);
+    }
+
+    if ((value & 0x2000) > 0) // Clear signal 2
+    {
+        SP_STATUS_REG_R &= ~(bswap_32(0x200));
+    }
+    else if ((value & 0x4000) > 0) // Set signal 2
+    {
+        SP_STATUS_REG_R |= bswap_32(0x200);
+    }
+    
+    if ((value & 0x8000) > 0) // Clear signal 3
+    {
+        SP_STATUS_REG_R &= ~(bswap_32(0x400));
+    }
+    else if ((value & 0x10000) > 0) // Set signal 3
+    {
+        SP_STATUS_REG_R |= bswap_32(0x400);
+    }
+
+    if ((value & 0x20000) > 0) // Clear signal 4
+    {
+        SP_STATUS_REG_R &= ~(bswap_32(0x800));
+    }
+    else if ((value & 0x40000) > 0) // Set signal 4
+    {
+        SP_STATUS_REG_R |= bswap_32(0x800);
+    }
+
+    if ((value & 0x80000) > 0) // Clear signal 5
+    {
+        SP_STATUS_REG_R &= ~(bswap_32(0x1000));
+    }
+    else if ((value & 0x100000) > 0) // Set signal 5
+    {
+        SP_STATUS_REG_R |= bswap_32(0x1000);
+    }
+
+    if ((value & 0x200000) > 0) // Clear signal 6
+    {
+        SP_STATUS_REG_R &= ~(bswap_32(0x2000));
+    }
+    else if ((value & 0x400000) > 0) // Set signal 6
+    {
+        SP_STATUS_REG_R |= bswap_32(0x2000);
+    }
+
+    if ((value & 0x800000) > 0) // Clear signal 7
+    {
+        SP_STATUS_REG_R &= ~(bswap_32(0x4000));
+    }
+    else if ((value & 0x1000000) > 0) // Set signal 7
+    {
+        SP_STATUS_REG_R |= bswap_32(0x4000);
+    }
+
+    SP_STATUS_REG_W = 0;
+    if (!RSP_has_started) RSP_start();
+}
+
 void DPC_END_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
 {
     DPC_CURRENT_REG_R = DPC_START_REG_RW;
@@ -17,6 +136,16 @@ void PI_WR_LEN_WRITE_EVENT(uint64_t value, uint32_t addr)
     PI_STATUS_REG_R &= bswap_32(~0b0001); // Clear DMA Busy
 
     if (config.debug_logging) printf("PIDMA: Type: Write, DMA Length: 0x%x, Cart Address: 0x%x, DRAM Address: 0x%x\n", (uint32_t)value + 1, bswap_32(PI_CART_ADDR_REG_RW), bswap_32(PI_DRAM_ADDR_REG_RW));
+}
+
+void MI_INIT_MODE_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
+{
+    if ((value & 0x0800) > 0)
+    {
+        MI_INTR_REG_R &= ~(bswap_32(1 << MI_INTR_DP));
+    }
+
+    MI_INIT_MODE_REG_W = 0;
 }
 
 void MI_INTR_MASK_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
@@ -91,7 +220,7 @@ void VI_ORIGIN_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
 
 void VI_CURRENT_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
 {
-    MI_INTR_REG_R &= ~(bswap_32(0x08)); // Clear the VI Interrupt
+    MI_INTR_REG_R &= ~(bswap_32(1 << MI_INTR_VI)); // Clear the VI Interrupt
     VI_CURRENT_REG_W = 0;
 }
 
@@ -290,7 +419,7 @@ void memory_init(void* ROM, size_t ROM_size)
     mem_entries[i].mem_block_write = &SP_STATUS_REG_W;
     mem_entries[i].RW              = false;
     mem_entries[i].should_free     = false;
-    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].write_callback  = SP_STATUS_REG_WRITE_EVENT;
     mem_entries[i].read_callback   = NULL;
     mem_entries[i].set = true;
     ++i;
@@ -356,7 +485,7 @@ void memory_init(void* ROM, size_t ROM_size)
     mem_entries[i].mem_block_write = &MI_INIT_MODE_REG_W;
     mem_entries[i].RW              = false;
     mem_entries[i].should_free     = false;
-    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].write_callback  = MI_INIT_MODE_REG_WRITE_EVENT;
     mem_entries[i].read_callback   = NULL;
     mem_entries[i].set = true;
     ++i;

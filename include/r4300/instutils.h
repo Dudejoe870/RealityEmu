@@ -34,12 +34,12 @@
 #define INST_COP(x)    ((x & INST_COP_MSK)    >> INST_COP_SHIFT)
 
 #define INST_FMT(x) INST_RS(x)
-#define INST_FT(x) INST_RT(x)
-#define INST_FS(x) INST_RD(x)
-#define INST_FD(x) INST_SA(x)
+#define INST_FT(x)  INST_RT(x)
+#define INST_FS(x)  INST_RD(x)
+#define INST_FD(x)  INST_SA(x)
 
 __attribute__((__always_inline__)) static inline void MIPS_undefined_inst_error(uint32_t value, cpu_t* cpu)
 {
-    fprintf(stderr, "ERROR: Unimplemented Instruction 0x%x!  PC: 0x%x\n", value, (uint32_t)cpu->regs.PC.value);
+    fprintf(stderr, "%s: ERROR: Unimplemented Instruction 0x%x!  PC: 0x%x\n", cpu->rsp ? "RSP" : "CPU", value, (uint32_t)cpu->regs.PC.value);
     is_running = false;
 }

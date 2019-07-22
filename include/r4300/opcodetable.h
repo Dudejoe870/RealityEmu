@@ -1,13 +1,9 @@
 #pragma once
 
 #include <stdint.h>
-#include "r4300/r4300.h"
 
-typedef struct
-{
-    void (*interpret)(uint32_t value, cpu_t* cpu);
-} opcode_t;
+#include "mips/cpu.h"
 
-opcode_t opcode_table[0x3F+1]; // Indexed by the first six bits of the Instruction.
+opcode_t CPU_opcode_table[0x3F+1]; // Indexed by the first six bits of the Instruction.
 
-void opcode_table_init(void);
+void CPU_opcode_table_init(void);

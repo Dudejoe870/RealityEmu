@@ -138,6 +138,8 @@ int main(int argc, char** argv)
         time_seconds = ((float)SDL_GetTicks()) / 1000;
 
         CPU_mhz = (r4300.all_cycles / 1000000) / time_seconds;
+        RSP_mhz = (rsp.all_cycles   / 1000000) / time_seconds;
+        VIs     = VI_intrs / time_seconds;
     }
 
     window_cleanup();
