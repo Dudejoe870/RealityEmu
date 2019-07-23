@@ -3,6 +3,7 @@
 #include "common.h"
 
 uint32_t current_scanline = 0;
+uint32_t vi_cycle_count   = 0;
 
 __attribute__((__always_inline__)) static inline void CPU_interp_step(void)
 {
@@ -26,13 +27,25 @@ __attribute__((__always_inline__)) static inline void CPU_interp_step(void)
         r4300.cycles = 0;
     }
 
-    if (current_scanline >= (bswap_32(VI_V_SYNC_REG_RW) & 0x3FF)) current_scanline = 0; // Technically isn't correct timing
-    else ++current_scanline;                                                            // but this is just here to make things work.
-    VI_CURRENT_REG_R = bswap_32(current_scanline);
+    if (vi_cycle_count >= 6510)
+    {
+        if (current_scanline >= (bswap_32(VI_V_SYNC_REG_RW) & 0x3FF)) current_scanline = 0;
+        else ++current_scanline;
+        VI_CURRENT_REG_R = bswap_32(current_scanline);
+
+        if (current_scanline == (bswap_32(VI_INTR_REG_RW) - 1))
+        {
+            invoke_mi_interrupt(MI_INTR_VI);
+            ++VI_intrs;
+        }
+
+        vi_cycle_count = 0;
+    }
 
     r4300.curr_inst_cycles = 1;
     op.interpret(inst, &r4300);
 
+    vi_cycle_count   += r4300.curr_inst_cycles;
     r4300.cycles     += r4300.curr_inst_cycles;
     r4300.all_cycles += r4300.curr_inst_cycles;
 
@@ -56,11 +69,14 @@ __attribute__((__always_inline__)) static inline void CPU_interp_step(void)
 void* CPU_run(void* vargp)
 {
     while (is_running)
+    {
         CPU_interp_step();
+        RSP_run();
+    }
     return NULL;
 }
 
-void COP0_WIRED_REG_WRITE_EVENT(void)
+void COP0_WIRED_REG_WRITE_EVENT(uint64_t value, uint8_t index)
 {
     r4300.regs.COP0[COP0_RANDOM].value = 0x1F;
 }

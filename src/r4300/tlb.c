@@ -45,8 +45,8 @@ void write_TLB_entry(uint32_t index)
     res.valid1          = (uint8_t) ((r4300.regs.COP0[COP0_ENTRYLO1].value & 0b000010)   >> 1);
     res.dirty1          = (uint8_t) ((r4300.regs.COP0[COP0_ENTRYLO1].value & 0b000100)   >> 2);
     res.page_coherency1 = (uint8_t) ((r4300.regs.COP0[COP0_ENTRYLO1].value & 0b111000)   >> 3);
-    res.entry_hi        = (uint32_t) r4300.regs.COP0[COP0_ENTRYHI].value;
-    res.page_mask       = (uint32_t) r4300.regs.COP0[COP0_PAGEMASK].value;
+    res.entry_hi        = (uint32_t)  r4300.regs.COP0[COP0_ENTRYHI].value;
+    res.page_mask       = (uint32_t)  r4300.regs.COP0[COP0_PAGEMASK].value;
     res.global0         = (uint8_t)(((uint8_t)r4300.regs.COP0[COP0_ENTRYLO0].value & 0x1) & ((uint8_t)r4300.regs.COP0[COP0_ENTRYLO1].value & 0x1));
     res.global1         = res.global0;
 

@@ -23,10 +23,8 @@ cpu_t rsp;
 
 double RSP_mhz;
 
-bool RSP_has_started;
+void RSP_run(void);
 
 void RSP_init(void);
 
 void RSP_cleanup(void);
-
-void RSP_start(void);

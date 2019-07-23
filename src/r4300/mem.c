@@ -4,6 +4,46 @@
 
 void* framebuffer_addr = NULL;
 
+void SP_RD_LEN_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
+{
+    uint16_t len   =  value & 0x00000FFF;
+    uint8_t  count = (value & 0x000FF000) >> 12;
+    uint16_t skip  = (value & 0xFFF00000) >> 20;
+
+    uint8_t* MEM = (bswap_32(SP_MEM_ADDR_REG_RW) & 0x1000) ? SP_IMEM_RW : SP_DMEM_RW;
+
+    uint32_t index = 0;
+    uint32_t index_no_skip = 0;
+    for (uint32_t j = 0; j <= count; ++j)
+    {
+        for (uint32_t i = 0; i <= len; ++i, ++index, ++index_no_skip)
+        {
+            MEM[(bswap_32(SP_MEM_ADDR_REG_RW) & 0xFFF) + index_no_skip] = read_uint8((bswap_32(SP_DRAM_ADDR_REG_RW) & 0x1FFFFFFF) + index);
+        }
+        index += skip;
+    }
+}
+
+void SP_WR_LEN_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
+{
+    uint16_t len   =  value & 0x00000FFF;
+    uint8_t  count = (value & 0x000FF000) >> 12;
+    uint16_t skip  = (value & 0xFFF00000) >> 20;
+
+    uint8_t* MEM = (bswap_32(SP_MEM_ADDR_REG_RW) & 0x1000) ? SP_IMEM_RW : SP_DMEM_RW;
+
+    uint32_t index = 0;
+    uint32_t index_no_skip = 0;
+    for (uint32_t j = 0; j <= count; ++j)
+    {
+        for (uint32_t i = 0; i <= len; ++i, ++index, ++index_no_skip)
+        {
+            write_uint8(MEM[(bswap_32(SP_MEM_ADDR_REG_RW) & 0xFFF) + index_no_skip], (bswap_32(SP_DRAM_ADDR_REG_RW) & 0x1FFFFFFF) + index);
+        }
+        index += skip;
+    }
+}
+
 void SP_STATUS_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
 {
     if ((value & 0x0001) > 0) // Clear halt
@@ -120,7 +160,6 @@ void SP_STATUS_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
     }
 
     SP_STATUS_REG_W = 0;
-    if (!RSP_has_started) RSP_start();
 }
 
 void DPC_END_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
@@ -135,7 +174,19 @@ void PI_WR_LEN_WRITE_EVENT(uint64_t value, uint32_t addr)
 
     PI_STATUS_REG_R &= bswap_32(~0b0001); // Clear DMA Busy
 
+    invoke_mi_interrupt(MI_INTR_PI);
+
     if (config.debug_logging) printf("PIDMA: Type: Write, DMA Length: 0x%x, Cart Address: 0x%x, DRAM Address: 0x%x\n", (uint32_t)value + 1, bswap_32(PI_CART_ADDR_REG_RW), bswap_32(PI_DRAM_ADDR_REG_RW));
+}
+
+void PI_STATUS_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
+{
+    if ((value & 2) > 0)
+    {
+        MI_INTR_REG_R &= ~(bswap_32(1 << MI_INTR_PI));
+    }
+
+    PI_STATUS_REG_W = 0;
 }
 
 void MI_INIT_MODE_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
@@ -233,6 +284,11 @@ void AI_STATUS_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
 {
     MI_INTR_REG_R &= ~(bswap_32(0x04)); // Clear the AI Interrupt
     AI_STATUS_REG_W = 0;
+}
+
+void PIF_RAM_READ_EVENT(uint32_t addr)
+{
+    if ((addr & 0x1FFFFFFF) == 0x1FC007FC) ((uint8_t*)PIF_RAM_RW)[0x3F] = 0x80;
 }
 
 void memory_init(void* ROM, size_t ROM_size)
@@ -409,6 +465,50 @@ void memory_init(void* ROM, size_t ROM_size)
     mem_entries[i].RW              = true;
     mem_entries[i].should_free     = true;
     mem_entries[i].write_callback  = NULL;
+    mem_entries[i].read_callback   = NULL;
+    mem_entries[i].set = true;
+    ++i;
+
+    mem_entries[i].base            = 0x04040000;
+    mem_entries[i].end_addr        = 0x04040003;
+    mem_entries[i].mem_block_read  = &SP_MEM_ADDR_REG_RW;
+    mem_entries[i].mem_block_write = &SP_MEM_ADDR_REG_RW;
+    mem_entries[i].RW              = true;
+    mem_entries[i].should_free     = false;
+    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].read_callback   = NULL;
+    mem_entries[i].set = true;
+    ++i;
+
+    mem_entries[i].base            = 0x04040004;
+    mem_entries[i].end_addr        = 0x04040007;
+    mem_entries[i].mem_block_read  = &SP_DRAM_ADDR_REG_RW;
+    mem_entries[i].mem_block_write = &SP_DRAM_ADDR_REG_RW;
+    mem_entries[i].RW              = true;
+    mem_entries[i].should_free     = false;
+    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].read_callback   = NULL;
+    mem_entries[i].set = true;
+    ++i;
+
+    mem_entries[i].base            = 0x04040008;
+    mem_entries[i].end_addr        = 0x0404000B;
+    mem_entries[i].mem_block_read  = &SP_RD_LEN_REG_RW;
+    mem_entries[i].mem_block_write = &SP_RD_LEN_REG_RW;
+    mem_entries[i].RW              = true;
+    mem_entries[i].should_free     = false;
+    mem_entries[i].write_callback  = SP_RD_LEN_REG_WRITE_EVENT;
+    mem_entries[i].read_callback   = NULL;
+    mem_entries[i].set = true;
+    ++i;
+
+    mem_entries[i].base            = 0x0404000C;
+    mem_entries[i].end_addr        = 0x0404000F;
+    mem_entries[i].mem_block_read  = &SP_WR_LEN_REG_RW;
+    mem_entries[i].mem_block_write = &SP_WR_LEN_REG_RW;
+    mem_entries[i].RW              = true;
+    mem_entries[i].should_free     = false;
+    mem_entries[i].write_callback  = SP_WR_LEN_REG_WRITE_EVENT;
     mem_entries[i].read_callback   = NULL;
     mem_entries[i].set = true;
     ++i;
@@ -782,7 +882,7 @@ void memory_init(void* ROM, size_t ROM_size)
     mem_entries[i].mem_block_write = &PI_STATUS_REG_W;
     mem_entries[i].RW              = false;
     mem_entries[i].should_free     = false;
-    mem_entries[i].write_callback  = NULL;
+    mem_entries[i].write_callback  = PI_STATUS_REG_WRITE_EVENT;
     mem_entries[i].read_callback   = NULL;
     mem_entries[i].set = true;
     ++i;
@@ -916,7 +1016,7 @@ void memory_init(void* ROM, size_t ROM_size)
     mem_entries[i].RW              = true;
     mem_entries[i].should_free     = true;
     mem_entries[i].write_callback  = NULL;
-    mem_entries[i].read_callback   = NULL;
+    mem_entries[i].read_callback   = PIF_RAM_READ_EVENT;
     mem_entries[i].set = true;
     ++i;
 }

@@ -38,7 +38,7 @@ char* gpr_names[] =
     "ra"
 };
 
-char* cop0_names[] =
+char* cpu_cop0_names[] =
 {
     "Index",
     "Random",
@@ -74,6 +74,26 @@ char* cop0_names[] =
     "Reserved"
 };
 
+char* rsp_cop0_names[] =
+{
+    "DMA Cache",
+    "DMA DRAM",
+    "DMA Read Length",
+    "DMA Write Length",
+    "SP Status",
+    "DMA Full",
+    "DMA Busy",
+    "SP Reserved",
+    "CMD Start",
+    "CMD End",
+    "CMD Current",
+    "CMD Status",
+    "CMD Clock",
+    "CMD Busy",
+    "CMD Pipe Busy",
+    "CMD TMEM Busy"
+};
+
 void dbg_memdump(uint32_t start, uint32_t end)
 {
     FILE* fptr;
@@ -95,18 +115,30 @@ void dbg_memdump(uint32_t start, uint32_t end)
     exit(0);
 }
 
-void dbg_printreg(void)
+void dbg_printreg(cpu_t cpu)
 {
-    printf("PC = 0x%x\n", (uint32_t)r4300.regs.PC.value);
+    printf("PC = 0x%x\n", (uint32_t)cpu.regs.PC.value);
     for (size_t i = 0; i < 32; ++i)
-        printf("%s = 0x%lx\n", gpr_names[i], r4300.regs.GPR[i].value);
-    printf("HI = 0x%lx\n", r4300.regs.HI.value);
-    printf("LO = 0x%lx\n", r4300.regs.LO.value);
-    printf("LLbit = %u\n", r4300.regs.LLbit);
+        printf("%s = 0x%lx\n", gpr_names[i], cpu.regs.GPR[i].value);
+    if (!cpu.rsp)
+    {
+        printf("HI = 0x%lx\n", cpu.regs.HI.value);
+        printf("LO = 0x%lx\n", cpu.regs.LO.value);
+        printf("LLbit = %u\n", cpu.regs.LLbit);
+    }
     putchar('\n');
-    for (size_t i = 0; i < 32; ++i)
-        printf("%s = 0x%lx\n", cop0_names[i], r4300.regs.COP0[i].value);
-    putchar('\n');
-    for (size_t i = 0; i < 32; ++i)
-        printf("FPR[%lu] = 0x%lx\n", i, r4300.regs.FPR[i].value);
+    char** cop0_names = (cpu.rsp) ? rsp_cop0_names : cpu_cop0_names;
+    for (size_t i = 0; i < ((cpu.rsp) ? 16 : 32); ++i)
+        printf("%s = 0x%lx\n", cop0_names[i], cpu.regs.COP0[i].value);
+    if (cpu.rsp)
+    {
+        for (size_t i = 16; i < 32; ++i)
+            printf("Undefined = 0x%lx\n", cpu.regs.COP0[i].value);
+    }
+    if (!cpu.rsp)
+    {
+        putchar('\n');
+        for (size_t i = 0; i < 32; ++i)
+            printf("FPR[%lu] = 0x%lx\n", i, cpu.regs.FPR[i].value);
+    }
 }

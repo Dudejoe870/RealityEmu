@@ -39,6 +39,10 @@ uint32_t RDRAM_DEVICE_MANUF_REG;
 
 void*    SP_DMEM_RW;
 void*    SP_IMEM_RW;
+uint32_t SP_MEM_ADDR_REG_RW;
+uint32_t SP_DRAM_ADDR_REG_RW;
+uint32_t SP_RD_LEN_REG_RW;
+uint32_t SP_WR_LEN_REG_RW;
 uint32_t SP_STATUS_REG_W;
 uint32_t SP_STATUS_REG_R;
 uint32_t SP_PC_REG_RW;

@@ -1130,12 +1130,19 @@ __attribute__((__always_inline__)) static inline void DMTC0(uint32_t value, cpu_
 
 __attribute__((__always_inline__)) static inline void ERET(uint32_t value, cpu_t* cpu)
 {
-    uint32_t NewPC = (cpu->regs.COP0[COP0_STATUS].value & 0b100) > 0 
-                    ? (uint32_t)cpu->regs.COP0[COP0_ERROREPC].value 
-                    : (uint32_t)cpu->regs.COP0[COP0_EPC].value;
-    cpu->regs.PC.value = NewPC;
-    cpu->regs.COP0[COP0_STATUS].value &= ~0b100;
-    cpu->regs.LLbit = false;
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+    }
+    else
+    {
+        uint32_t NewPC = (cpu->regs.COP0[COP0_STATUS].value & 0b100) > 0 
+                        ? (uint32_t)cpu->regs.COP0[COP0_ERROREPC].value 
+                        : (uint32_t)cpu->regs.COP0[COP0_EPC].value;
+        cpu->regs.PC.value = NewPC;
+        cpu->regs.COP0[COP0_STATUS].value &= (cpu->regs.COP0[COP0_STATUS].value & 0b100) > 0 ? ~0b100 : ~0b010;
+        cpu->regs.LLbit = false;
+    }
 }
 
 __attribute__((__always_inline__)) static inline void MFC0(uint32_t value, cpu_t* cpu)
@@ -1152,26 +1159,58 @@ __attribute__((__always_inline__)) static inline void MTC0(uint32_t value, cpu_t
 
 __attribute__((__always_inline__)) static inline void TLBP(uint32_t value, cpu_t* cpu)
 {
-    probe_TLB();
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+        return;
+    }
+    else
+    {
+        probe_TLB();
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void TLBR(uint32_t value, cpu_t* cpu)
 {
-    read_TLB_entry();
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+        return;
+    }
+    else
+    {
+        read_TLB_entry();
+    }
     advance_PC(cpu);
 }
 
 __attribute__((__always_inline__)) static inline void TLBWI(uint32_t value, cpu_t* cpu)
 {
-    write_TLB_entry_indexed();
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+        return;
+    }
+    else
+    {
+        write_TLB_entry_indexed();
+        advance_PC(cpu);
+    }
 }
 
 __attribute__((__always_inline__)) static inline void TLBWR(uint32_t value, cpu_t* cpu)
 {
-    write_TLB_entry_random();
-    advance_PC(cpu);
+    if (cpu->rsp)
+    {
+        MIPS_undefined_inst_error(value, cpu);
+        return;
+    }
+    else
+    {
+        write_TLB_entry_random();
+        advance_PC(cpu);
+    }
 }
 
 void COP0(uint32_t value, cpu_t* cpu)
@@ -2226,7 +2265,7 @@ void LW(uint32_t value, cpu_t* cpu)
     if (cpu->rsp)
     {
         if (addr > 0xFFF) write_GPR(0, INST_RT(value), cpu);
-        else write_GPR((uint32_t)bswap_16(*(uint32_t*)&(((uint8_t*)SP_DMEM_RW)[addr & 0xFFF])), INST_RT(value), cpu);
+        else write_GPR((uint32_t)bswap_32(*(uint32_t*)&(((uint8_t*)SP_DMEM_RW)[addr & 0xFFF])), INST_RT(value), cpu);
     }
     else
     {
@@ -2328,7 +2367,7 @@ void SH(uint32_t value, cpu_t* cpu)
             advance_PC(cpu);
             return;
         }
-        *((uint16_t*)&(((uint8_t*)SP_DMEM_RW)[addr & 0xFFF])) = (uint16_t)read_GPR(INST_RT(value), cpu);
+        *((uint16_t*)&(((uint8_t*)SP_DMEM_RW)[addr & 0xFFF])) = bswap_16((uint16_t)read_GPR(INST_RT(value), cpu));
     }
     else
     {
@@ -2359,7 +2398,7 @@ void SW(uint32_t value, cpu_t* cpu)
             advance_PC(cpu);
             return;
         }
-        *((uint32_t*)&(((uint8_t*)SP_DMEM_RW)[addr & 0xFFF])) = (uint32_t)read_GPR(INST_RT(value), cpu);
+        *((uint32_t*)&(((uint8_t*)SP_DMEM_RW)[addr & 0xFFF])) = bswap_32((uint32_t)read_GPR(INST_RT(value), cpu));
     }
     else
     {
