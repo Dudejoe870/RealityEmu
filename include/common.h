@@ -4,7 +4,6 @@
 #include "cart.h"
 #include "cic.h"
 #include "config.h"
-#include "window.h"
 
 #include "mips/cpu.h"
 #include "mips/interpreter.h"

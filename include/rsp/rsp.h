@@ -21,8 +21,6 @@
 
 cpu_t rsp;
 
-double RSP_mhz;
-
 void RSP_run(void);
 
 void RSP_init(void);

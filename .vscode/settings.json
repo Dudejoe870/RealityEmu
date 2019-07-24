@@ -7,7 +7,8 @@
         "system_error": "c",
         "type_traits": "c",
         "valarray": "c",
-        "common.h": "c"
+        "common.h": "c",
+        "main.h": "c"
     },
     "C_Cpp.default.cStandard": "c11",
     "C_Cpp.default.intelliSenseMode": "gcc-x64"

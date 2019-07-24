@@ -359,9 +359,9 @@ void draw_scanbuffer(uint32_t* scanbuffer, edgecoeff_t* edges, shadecoeff_t* sha
 
         for (size_t y = screen_y1; y < screen_y2; ++y)
         {
-            uint32_t xmin = scanbuffer[(y * 2)    ];
+            uint32_t xmin = scanbuffer[(y * 2)    ] - 1;
 
-            uint32_t xmax = scanbuffer[(y * 2) + 1];
+            uint32_t xmax = scanbuffer[(y * 2) + 1] + 1;
 
             if (shade && is_cycles && xmax != 0)
             {

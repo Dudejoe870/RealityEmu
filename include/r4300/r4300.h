@@ -35,11 +35,6 @@
 
 cpu_t r4300;
 
-double CPU_mhz;
-
-double VIs; // I don't really know where else to store these?
-size_t VI_intrs;
-
 void CPU_init(void* ROM, size_t ROM_size);
 
 void CPU_cleanup(void);

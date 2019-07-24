@@ -7,6 +7,8 @@
 
 #include "common.h"
 
+#include "main.h"
+
 SDL_Window* window = NULL;
 SDL_GLContext context;
 GLuint framebuffer_texture = 0;
