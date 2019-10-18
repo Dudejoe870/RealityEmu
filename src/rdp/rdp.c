@@ -19,8 +19,11 @@ void RDP_init(void)
 
 void RDP_wake_up(void)
 {
-    should_run = true;
-    pthread_t RDP_thread;
+    if (!should_run)
+    {
+        should_run = true;
+        pthread_t RDP_thread;
 
-    pthread_create(&RDP_thread, NULL, RDP_run, NULL);
+        pthread_create(&RDP_thread, NULL, RDP_run, NULL);
+    }
 }

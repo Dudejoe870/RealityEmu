@@ -27,7 +27,7 @@ __attribute__((__always_inline__)) static inline void RSP_interp_step(void)
 
     rsp.regs.GPR[0].value = 0;
 
-    rsp.curr_inst_cycles = 1;
+    rsp.curr_inst_cycles = 4;
     op.interpret(inst, &rsp);
 
     rsp.cycles     += rsp.curr_inst_cycles;

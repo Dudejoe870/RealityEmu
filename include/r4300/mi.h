@@ -12,4 +12,6 @@
 
 size_t VI_intrs;
 
+void (*vi_event)(void);
+
 void invoke_mi_interrupt(uint8_t interrupt);

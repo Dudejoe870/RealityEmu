@@ -10,4 +10,6 @@ void invoke_mi_interrupt(uint8_t interrupt)
     {
         r4300.regs.COP0[COP0_CAUSE].value |= 0x400;
     }
+
+    if (vi_event != NULL) vi_event();
 }

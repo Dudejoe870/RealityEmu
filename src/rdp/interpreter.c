@@ -15,14 +15,14 @@ __attribute__((__always_inline__)) static inline uint64_t get_coeff(uint16_t off
            : read_uint64(bswap_32(DPC_CURRENT_REG_R) + offset);
 }
 
-__attribute__((__always_inline__)) static inline void add_PC(uint8_t ToAdd)
+__attribute__((__always_inline__)) static inline void add_PC(uint8_t value)
 {
-    DPC_CURRENT_REG_R = bswap_32(bswap_32(DPC_CURRENT_REG_R) + ToAdd);
+    DPC_CURRENT_REG_R = bswap_32(bswap_32(DPC_CURRENT_REG_R) + value);
 }
 
-__attribute__((__always_inline__)) static inline void set_PC(uint32_t ToSet)
+__attribute__((__always_inline__)) static inline void set_PC(uint32_t value)
 {
-    DPC_CURRENT_REG_R = bswap_32(ToSet);
+    DPC_CURRENT_REG_R = bswap_32(value);
 }
 
 void RDP_step(void)
@@ -296,6 +296,9 @@ void cmd_Triangle(uint64_t value)
     edgecoeff_t edges;
     edges.lft = (value & 0x0080000000000000) > 0;
 
+    edges.level = (value & 0x0038000000000000) >> 51;
+    edges.tile  = (value & 0x0007000000000000) >> 48;
+
     edges.YL = (value & 0x00003FFF00000000) >> 32;
     edges.YM = (value & 0x000000003FFF0000) >> 16;
     edges.YH = (value & 0x0000000000003FFF);
@@ -377,7 +380,57 @@ void cmd_Triangle(uint64_t value)
         add_PC(64);
     }
 
-    draw_triangle(&edges, shade_point, NULL, NULL);
+    texcoeff_t tex;
+    texcoeff_t* tex_point = NULL;
+
+    if ((flags & 0b0010) > 0) // Textured
+    {
+        uint64_t tex_coeff1 = get_coeff(coeff_offset++ * 8);
+        uint64_t tex_coeff2 = get_coeff(coeff_offset++ * 8);
+        uint64_t tex_coeff3 = get_coeff(coeff_offset++ * 8);
+        uint64_t tex_coeff4 = get_coeff(coeff_offset++ * 8);
+        uint64_t tex_coeff5 = get_coeff(coeff_offset++ * 8);
+        uint64_t tex_coeff6 = get_coeff(coeff_offset++ * 8);
+        uint64_t tex_coeff7 = get_coeff(coeff_offset++ * 8);
+        uint64_t tex_coeff8 = get_coeff(coeff_offset++ * 8);
+
+        tex.S = (tex_coeff1 & 0xFFFF000000000000) >> 48;
+        tex.T = (tex_coeff1 & 0x0000FFFF00000000) >> 32;
+        tex.W = (tex_coeff1 & 0x00000000FFFF0000) >> 16;
+
+        tex.DsDx = (tex_coeff2 & 0xFFFF000000000000) >> 48;
+        tex.DtDx = (tex_coeff2 & 0x0000FFFF00000000) >> 32;
+        tex.DwDx = (tex_coeff2 & 0x00000000FFFF0000) >> 16;
+
+        tex.S_frac = (tex_coeff3 & 0xFFFF000000000000) >> 48;
+        tex.T_frac = (tex_coeff3 & 0x0000FFFF00000000) >> 32;
+        tex.W_frac = (tex_coeff3 & 0x00000000FFFF0000) >> 16;
+
+        tex.DsDx_frac = (tex_coeff4 & 0xFFFF000000000000) >> 48;
+        tex.DtDx_frac = (tex_coeff4 & 0x0000FFFF00000000) >> 32;
+        tex.DwDx_frac = (tex_coeff4 & 0x00000000FFFF0000) >> 16;
+
+        tex.DsDe = (tex_coeff5 & 0xFFFF000000000000) >> 48;
+        tex.DtDe = (tex_coeff5 & 0x0000FFFF00000000) >> 32;
+        tex.DwDe = (tex_coeff5 & 0x00000000FFFF0000) >> 16;
+
+        tex.DsDy = (tex_coeff6 & 0xFFFF000000000000) >> 48;
+        tex.DtDy = (tex_coeff6 & 0x0000FFFF00000000) >> 32;
+        tex.DwDy = (tex_coeff6 & 0x00000000FFFF0000) >> 16;
+
+        tex.DsDe_frac = (tex_coeff7 & 0xFFFF000000000000) >> 48;
+        tex.DtDe_frac = (tex_coeff7 & 0x0000FFFF00000000) >> 32;
+        tex.DwDe_frac = (tex_coeff7 & 0x00000000FFFF0000) >> 16;
+
+        tex.DsDy_frac = (tex_coeff8 & 0xFFFF000000000000) >> 48;
+        tex.DtDy_frac = (tex_coeff8 & 0x0000FFFF00000000) >> 32;
+        tex.DwDy_frac = (tex_coeff8 & 0x00000000FFFF0000) >> 16;
+
+        tex_point = &tex;
+        add_PC(64);
+    }
+
+    draw_triangle(&edges, shade_point, tex_point, NULL);
 
     add_PC(32);
 }

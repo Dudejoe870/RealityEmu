@@ -2101,12 +2101,14 @@ void COP1(uint32_t value, cpu_t* cpu)
 
 void LDC1(uint32_t value, cpu_t* cpu)
 {
+    cpu->curr_inst_cycles = 5;
     write_FPR(read_uint64((uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value)), INST_FT(value), cpu);
     advance_PC(cpu);
 }
 
 void LWC1(uint32_t value, cpu_t* cpu)
 {
+    cpu->curr_inst_cycles = 5;
     write_FPR((uint32_t)read_uint32((uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value)), INST_FT(value), cpu);
     advance_PC(cpu);
 }
@@ -2170,6 +2172,7 @@ void XORI(uint32_t value, cpu_t* cpu)
 void LB(uint32_t value, cpu_t* cpu)
 {
     uint32_t addr = (uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value);
+    cpu->curr_inst_cycles = 5;
     if (cpu->rsp)
     {
         if (addr > 0xFFF) write_GPR(0, INST_RT(value), cpu);
@@ -2185,6 +2188,7 @@ void LB(uint32_t value, cpu_t* cpu)
 void LBU(uint32_t value, cpu_t* cpu)
 {
     uint32_t addr = (uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value);
+    cpu->curr_inst_cycles = 5;
     if (cpu->rsp)
     {
         if (addr > 0xFFF) write_GPR(0, INST_RT(value), cpu);
@@ -2199,6 +2203,7 @@ void LBU(uint32_t value, cpu_t* cpu)
 
 void LD(uint32_t value, cpu_t* cpu)
 {
+    cpu->curr_inst_cycles = 5;
     write_GPR(read_uint64((uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value)), INST_RT(value), cpu);
     advance_PC(cpu);
 }
@@ -2216,6 +2221,7 @@ void LDR(uint32_t value, cpu_t* cpu)
 void LH(uint32_t value, cpu_t* cpu)
 {
     uint32_t addr = (uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value);
+    cpu->curr_inst_cycles = 5;
     if (cpu->rsp)
     {
         if (addr > 0xFFF) write_GPR(0, INST_RT(value), cpu);
@@ -2231,6 +2237,7 @@ void LH(uint32_t value, cpu_t* cpu)
 void LHU(uint32_t value, cpu_t* cpu)
 {
     uint32_t addr = (uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value);
+    cpu->curr_inst_cycles = 5;
     if (cpu->rsp)
     {
         if (addr > 0xFFF) write_GPR(0, INST_RT(value), cpu);
@@ -2262,6 +2269,7 @@ void LUI(uint32_t value, cpu_t* cpu)
 void LW(uint32_t value, cpu_t* cpu)
 {
     uint32_t addr = (uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value);
+    cpu->curr_inst_cycles = 5;
     if (cpu->rsp)
     {
         if (addr > 0xFFF) write_GPR(0, INST_RT(value), cpu);
@@ -2276,6 +2284,7 @@ void LW(uint32_t value, cpu_t* cpu)
 
 void LWL(uint32_t value, cpu_t* cpu)
 {
+    cpu->curr_inst_cycles = 5;
     short    offs      = (short)INST_IMM(value);
     uint32_t base_addr = (uint32_t)read_GPR(INST_RS(value), cpu);
     uint32_t addr      = (base_addr & ~0x3) + offs;
@@ -2292,6 +2301,7 @@ void LWL(uint32_t value, cpu_t* cpu)
 
 void LWR(uint32_t value, cpu_t* cpu)
 {
+    cpu->curr_inst_cycles = 5;
     short    offs      = (short)INST_IMM(value);
     uint32_t base_addr = (uint32_t)read_GPR(INST_RS(value), cpu);
     uint32_t addr      = (base_addr & ~0x3) + offs;
@@ -2308,6 +2318,7 @@ void LWR(uint32_t value, cpu_t* cpu)
 
 void LWU(uint32_t value, cpu_t* cpu)
 {
+    cpu->curr_inst_cycles = 5;
     write_GPR((uint32_t)read_uint32((uint32_t)read_GPR(INST_RS(value), cpu) + (short)INST_IMM(value)), INST_RT(value), cpu);
     advance_PC(cpu);
 }

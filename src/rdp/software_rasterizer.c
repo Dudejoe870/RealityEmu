@@ -182,26 +182,54 @@ __attribute__((__always_inline__)) static inline void do_x_pixel_scanbuffer(size
                                                                             float* shd_red,  float* shd_green, float* shd_blue, float* shd_alpha,
                                                                             float* shd_DrDx, float* shd_DgDx,  float* shd_DbDx, float* shd_DaDx,
                                                                             float* shd_DrDe, float* shd_DgDe,  float* shd_DbDe, float* shd_DaDe,
-                                                                            shadecoeff_t* shade)
+                                                                            float* tex_S,    float* tex_T,    float* tex_W,
+                                                                            float* tex_DsDx, float* tex_DtDx, float* tex_DwDx,
+                                                                            float* tex_DsDe, float* tex_DtDe, float* tex_DwDe,
+                                                                            shadecoeff_t* shade, texcoeff_t* tex, uint8_t index)
 {
     float shd_red_temp   = 0;
     float shd_green_temp = 0;
     float shd_blue_temp  = 0;
     float shd_alpha_temp = 0;
 
+    float tex_S_temp = 0;
+    float tex_T_temp = 0;
+    float tex_W_temp = 0;
+
+    uint16_t addr0 = 0;
+    uint16_t addr1 = 0;
+
     bool is_cycles = othermodes.cycle_type == CYCLE_1 || othermodes.cycle_type == CYCLE_2;
 
-    if (shade && is_cycles && xmax != 0)
+    if (is_cycles)
     {
-        shd_red_temp   = *shd_red;
-        shd_green_temp = *shd_green;
-        shd_blue_temp  = *shd_blue;
-        shd_alpha_temp = *shd_alpha;
+        if (shade)
+        {
+            shd_red_temp   = *shd_red;
+            shd_green_temp = *shd_green;
+            shd_blue_temp  = *shd_blue;
+            shd_alpha_temp = *shd_alpha;
+        }
+
+        if (tex)
+        {
+            tex_S_temp = *tex_S;
+            tex_T_temp = *tex_T;
+            tex_W_temp = *tex_W;
+
+            addr0 = tiles[index].addr;
+            addr1 = (index < 7) ? tiles[index+1].addr : 0;
+        }
     }
 
     size_t x = (lft == 0) ? xmax : xmin;
     while (true)
     {
+        if (xmax == 0) 
+        {
+            break;
+        }
+
         if (lft == 0)
         {
             if (x <= xmin) break;
@@ -211,7 +239,6 @@ __attribute__((__always_inline__)) static inline void do_x_pixel_scanbuffer(size
             if (x >= xmax) break;
         }
 
-        if (xmax == 0) break;
         uint32_t color = 0;
 
         if (othermodes.cycle_type == CYCLE_FILL)
@@ -219,7 +246,11 @@ __attribute__((__always_inline__)) static inline void do_x_pixel_scanbuffer(size
         else if (is_cycles)
         {
             rgbacolor_t shd_color;
-            memset(&shd_color, 0, sizeof(shd_color));
+            rgbacolor_t tex0_color;
+            rgbacolor_t tex1_color;
+            memset(&shd_color,  0, sizeof(shd_color));
+            memset(&tex0_color, 0, sizeof(tex0_color));
+            memset(&tex1_color, 0, sizeof(tex1_color));
             
             bool edge_cond = false;
 
@@ -227,6 +258,26 @@ __attribute__((__always_inline__)) static inline void do_x_pixel_scanbuffer(size
             else          edge_cond = x == xmin;
             if (shade)
             {
+                if (lft == 0)
+                {
+                    *shd_red   -= *shd_DrDx;
+                    *shd_green -= *shd_DgDx;
+                    *shd_blue  -= *shd_DbDx;
+                    *shd_alpha -= *shd_DaDx;
+                }
+                else if (lft == 1)
+                {
+                    *shd_red   += *shd_DrDx;
+                    *shd_green += *shd_DgDx;
+                    *shd_blue  += *shd_DbDx;
+                    *shd_alpha += *shd_DaDx;
+                }
+
+                if (*shd_red   < 0) *shd_red   = 0;
+                if (*shd_green < 0) *shd_green = 0;
+                if (*shd_blue  < 0) *shd_blue  = 0;
+                if (*shd_alpha < 0) *shd_alpha = 0;
+
                 if (edge_cond)
                 {
                     shd_red_temp   += *shd_DrDe;
@@ -250,40 +301,117 @@ __attribute__((__always_inline__)) static inline void do_x_pixel_scanbuffer(size
                     if (*shd_alpha < 0) *shd_alpha = 0;
                 }
 
-                if (lft == 0)
-                {
-                    *shd_red   -= *shd_DrDx;
-                    *shd_green -= *shd_DgDx;
-                    *shd_blue  -= *shd_DbDx;
-                    *shd_alpha -= *shd_DaDx;
-                }
-                else if (lft == 1)
-                {
-                    *shd_red   += *shd_DrDx;
-                    *shd_green += *shd_DgDx;
-                    *shd_blue  += *shd_DbDx;
-                    *shd_alpha += *shd_DaDx;
-                }
-
-                if (*shd_red   < 0) *shd_red   = 0;
-                if (*shd_green < 0) *shd_green = 0;
-                if (*shd_blue  < 0) *shd_blue  = 0;
-                if (*shd_alpha < 0) *shd_alpha = 0;
-
                 shd_color.red   = (uint8_t)*shd_red;
                 shd_color.green = (uint8_t)*shd_green;
                 shd_color.blue  = (uint8_t)*shd_blue;
                 shd_color.alpha = (uint8_t)*shd_alpha;
             }
 
+            if (tex)
+            {
+                if (edge_cond)
+                {
+                    tex_S_temp += *tex_DsDe;
+                    tex_T_temp += *tex_DtDe;
+                    tex_W_temp += *tex_DwDe;
+
+                    *tex_S += *tex_DsDe;
+                    *tex_T += *tex_DtDe;
+                    *tex_W += *tex_DwDe;
+
+                    if (tex_S_temp < 0) tex_S_temp = 0;
+                    if (tex_T_temp < 0) tex_T_temp = 0;
+                    if (tex_W_temp < 0) tex_W_temp = 0;
+
+                    if (*tex_S < 0) *tex_S = 0;
+                    if (*tex_T < 0) *tex_T = 0;
+                    if (*tex_W < 0) *tex_W = 0;
+                }
+
+                if (lft == 0)
+                {
+                    *tex_S -= *tex_DsDx;
+                    *tex_T -= *tex_DtDx;
+                    *tex_W -= *tex_DwDx;
+                }
+                else
+                {
+                    *tex_S += *tex_DsDx;
+                    *tex_T += *tex_DtDx;
+                    *tex_W += *tex_DwDx;
+                }
+
+                if (*tex_S < 0) *tex_S = 0;
+                if (*tex_T < 0) *tex_T = 0;
+                if (*tex_W < 0) *tex_W = 0;
+
+                float final_S = *tex_S;
+                float final_T = *tex_T;
+                if (othermodes.persp_tex_en)
+                {
+                    // TODO: Do perspective correction.
+                }
+
+                uint32_t S0 = 0;
+                uint32_t T0 = 0;
+                get_tex_coords(&S0, &T0, final_S / 32, 
+                                         final_T / 32, index, false);
+
+                uint32_t S1 = 0;
+                uint32_t T1 = 0;
+
+                if (index < 7) get_tex_coords(&S1, &T1, final_S / 32, 
+                                                        final_T / 32, index+1, false);
+
+                if (tiles[index].format == FRMT_RGBA && ((index < 7) ? tiles[index].format == tiles[index+1].format : true))
+                {
+                    size_t tex_index0 =               (S0 + T0 * (tiles[index].sh   + 1)) * ((tiles[index].size   == BPP_32) ? 4 : 2);
+                    size_t tex_index1 = (index < 7) ? (S1 + T1 * (tiles[index+1].sh + 1)) * ((tiles[index+1].size == BPP_32) ? 4 : 2) : 0;
+
+                    if (tex_index0 >= 4096 || tex_index1 >= 4096) continue;
+
+                    if (tiles[index].size == BPP_32)
+                    {
+                        tex0_color.red   = RDP_TMEM[addr0 + tex_index0 + 0];
+                        tex0_color.green = RDP_TMEM[addr0 + tex_index0 + 1];
+                        tex0_color.blue  = RDP_TMEM[addr0 + tex_index0 + 2];
+                        tex0_color.alpha = RDP_TMEM[addr0 + tex_index0 + 3];
+                    }
+                    else if (tiles[index].size == BPP_16)
+                    {
+                        convert_16_32(&tex0_color, bswap_16(*(uint16_t*)&RDP_TMEM[addr0 + tex_index0]));
+                    }
+
+                    if (index < 7)
+                    {
+                        if (tiles[index+1].size == BPP_32)
+                        {
+                            tex1_color.red   = RDP_TMEM[addr1 + tex_index1 + 0];
+                            tex1_color.green = RDP_TMEM[addr1 + tex_index1 + 1];
+                            tex1_color.blue  = RDP_TMEM[addr1 + tex_index1 + 2];
+                            tex1_color.alpha = RDP_TMEM[addr1 + tex_index1 + 3];
+                        }
+                        else if (tiles[index+1].size == BPP_16)
+                        {
+                            convert_16_32(&tex1_color, bswap_16(*(uint16_t*)&RDP_TMEM[addr1 + tex_index1]));
+                        }
+                    }
+                }
+                else
+                {
+                    puts("Texture formats other than RGBA are not supported currently.\n");
+                    continue;
+                }
+            }
+
             cccolorin_t cc_colors; 
             cc_colors.combined     = NULL;
-            cc_colors.texel0_color = NULL;
-            cc_colors.texel1_color = NULL;
-            cc_colors.shade_color  = &shd_color;
+            cc_colors.texel0_color = (tex) ? &tex0_color : NULL;
+            cc_colors.texel1_color = (tex) ? &tex1_color : NULL;
+            cc_colors.shade_color  = (shade) ? &shd_color : NULL;
 
             blcolorin_t bl_colors;
-            bl_colors.shade_color = &shd_color;
+            bl_colors.shade_color = (shade) ? &shd_color : NULL;
             rgbacolor_t mem_color = get_pixel(x, y);
             bl_colors.mem_color   = &mem_color;
             bl_colors.combined    = NULL;
@@ -296,16 +424,26 @@ __attribute__((__always_inline__)) static inline void do_x_pixel_scanbuffer(size
         else          ++x;
     }
 
-    if (shade && is_cycles && xmax != 0)
+    if (is_cycles)
     {
-        *shd_red   = shd_red_temp;
-        *shd_green = shd_green_temp;
-        *shd_blue  = shd_blue_temp;
-        *shd_alpha = shd_alpha_temp;
+        if (shade)
+        {
+            *shd_red   = shd_red_temp;
+            *shd_green = shd_green_temp;
+            *shd_blue  = shd_blue_temp;
+            *shd_alpha = shd_alpha_temp;
+        }
+
+        if (tex)
+        {
+            *tex_S = tex_S_temp;
+            *tex_T = tex_T_temp;
+            *tex_W = tex_W_temp;
+        }
     }
 }
 
-void draw_scanbuffer(uint32_t* scanbuffer, edgecoeff_t* edges, shadecoeff_t* shade)
+void draw_scanbuffer(uint32_t* scanbuffer, edgecoeff_t* edges, shadecoeff_t* shade, texcoeff_t* tex)
 {
     uint32_t screen_y1 = (uint32_t)(scissor_border.border.YH >> 2);
     uint32_t screen_y2 = (uint32_t)(scissor_border.border.YL >> 2);
@@ -332,49 +470,102 @@ void draw_scanbuffer(uint32_t* scanbuffer, edgecoeff_t* edges, shadecoeff_t* sha
         float shd_DbDy = 0;
         float shd_DaDy = 0;
 
+        float tex_S = 0;
+        float tex_T = 0;
+        float tex_W = 0;
+
+        float tex_DsDx = 0;
+        float tex_DtDx = 0;
+        float tex_DwDx = 0;
+
+        float tex_DsDe = 0;
+        float tex_DtDe = 0;
+        float tex_DwDe = 0;
+
+        float tex_DsDy = 0;
+        float tex_DtDy = 0;
+        float tex_DwDy = 0;
+
         bool is_cycles = othermodes.cycle_type == CYCLE_1 || othermodes.cycle_type == CYCLE_2;
 
-        if (shade && is_cycles)
+        if (is_cycles)
         {
-            shd_red   = get_float_value_from_frmt((short)shade->red,   shade->red_frac,   65535.0f);
-            shd_green = get_float_value_from_frmt((short)shade->green, shade->green_frac, 65535.0f);
-            shd_blue  = get_float_value_from_frmt((short)shade->blue,  shade->blue_frac,  65535.0f);
-            shd_alpha = get_float_value_from_frmt((short)shade->blue,  shade->blue_frac,  65535.0f);
+            if (shade)
+            {
+                shd_red   = get_float_value_from_frmt((short)shade->red,   shade->red_frac,   65535.0f);
+                shd_green = get_float_value_from_frmt((short)shade->green, shade->green_frac, 65535.0f);
+                shd_blue  = get_float_value_from_frmt((short)shade->blue,  shade->blue_frac,  65535.0f);
+                shd_alpha = get_float_value_from_frmt((short)shade->blue,  shade->blue_frac,  65535.0f);
 
-            shd_DrDx = get_float_value_from_frmt((short)shade->DrDx, shade->DrDx_frac, 65535.0f);
-            shd_DgDx = get_float_value_from_frmt((short)shade->DgDx, shade->DgDx_frac, 65535.0f);
-            shd_DbDx = get_float_value_from_frmt((short)shade->DbDx, shade->DbDx_frac, 65535.0f);
-            shd_DaDx = get_float_value_from_frmt((short)shade->DaDx, shade->DaDx_frac, 65535.0f);
+                shd_DrDx = get_float_value_from_frmt((short)shade->DrDx, shade->DrDx_frac, 65535.0f);
+                shd_DgDx = get_float_value_from_frmt((short)shade->DgDx, shade->DgDx_frac, 65535.0f);
+                shd_DbDx = get_float_value_from_frmt((short)shade->DbDx, shade->DbDx_frac, 65535.0f);
+                shd_DaDx = get_float_value_from_frmt((short)shade->DaDx, shade->DaDx_frac, 65535.0f);
 
-            shd_DrDe = get_float_value_from_frmt((short)shade->DrDe, shade->DrDe_frac, 65535.0f);
-            shd_DgDe = get_float_value_from_frmt((short)shade->DgDe, shade->DgDe_frac, 65535.0f);
-            shd_DbDe = get_float_value_from_frmt((short)shade->DbDe, shade->DbDe_frac, 65535.0f);
-            shd_DaDe = get_float_value_from_frmt((short)shade->DaDe, shade->DaDe_frac, 65535.0f);
+                shd_DrDe = get_float_value_from_frmt((short)shade->DrDe, shade->DrDe_frac, 65535.0f);
+                shd_DgDe = get_float_value_from_frmt((short)shade->DgDe, shade->DgDe_frac, 65535.0f);
+                shd_DbDe = get_float_value_from_frmt((short)shade->DbDe, shade->DbDe_frac, 65535.0f);
+                shd_DaDe = get_float_value_from_frmt((short)shade->DaDe, shade->DaDe_frac, 65535.0f);
 
-            shd_DrDy = get_float_value_from_frmt((short)shade->DrDy, shade->DrDy_frac, 65535.0f);
-            shd_DgDy = get_float_value_from_frmt((short)shade->DgDy, shade->DgDy_frac, 65535.0f);
-            shd_DbDy = get_float_value_from_frmt((short)shade->DbDy, shade->DbDy_frac, 65535.0f);
-            shd_DaDy = get_float_value_from_frmt((short)shade->DaDy, shade->DaDy_frac, 65535.0f);
+                shd_DrDy = get_float_value_from_frmt((short)shade->DrDy, shade->DrDy_frac, 65535.0f);
+                shd_DgDy = get_float_value_from_frmt((short)shade->DgDy, shade->DgDy_frac, 65535.0f);
+                shd_DbDy = get_float_value_from_frmt((short)shade->DbDy, shade->DbDy_frac, 65535.0f);
+                shd_DaDy = get_float_value_from_frmt((short)shade->DaDy, shade->DaDy_frac, 65535.0f);
+            }
+
+            if (tex)
+            {
+                tex_S = get_float_value_from_frmt((short)tex->S, tex->S_frac, 65535.0f);
+                tex_T = get_float_value_from_frmt((short)tex->T, tex->T_frac, 65535.0f);
+                tex_W = get_float_value_from_frmt((short)tex->W, tex->W_frac, 65535.0f);
+
+                tex_DsDx = get_float_value_from_frmt((short)tex->DsDx, tex->DsDx_frac, 65535.0f);
+                tex_DtDx = get_float_value_from_frmt((short)tex->DtDx, tex->DtDx_frac, 65535.0f);
+                tex_DwDx = get_float_value_from_frmt((short)tex->DwDx, tex->DwDx_frac, 65535.0f);
+
+                tex_DsDe = get_float_value_from_frmt((short)tex->DsDe, tex->DsDe_frac, 65535.0f);
+                tex_DtDe = get_float_value_from_frmt((short)tex->DtDe, tex->DtDe_frac, 65535.0f);
+                tex_DwDe = get_float_value_from_frmt((short)tex->DwDe, tex->DwDe_frac, 65535.0f);
+
+                tex_DsDy = get_float_value_from_frmt((short)tex->DsDy, tex->DsDy_frac, 65535.0f);
+                tex_DtDy = get_float_value_from_frmt((short)tex->DtDy, tex->DtDy_frac, 65535.0f);
+                tex_DwDy = get_float_value_from_frmt((short)tex->DwDy, tex->DwDy_frac, 65535.0f);
+            }
         }
 
         for (size_t y = screen_y1; y < screen_y2; ++y)
         {
-            uint32_t xmin = scanbuffer[(y * 2)    ] - 1;
+            uint32_t xmin = scanbuffer[(y * 2)    ];
+            uint32_t xmax = scanbuffer[(y * 2) + 1];
 
-            uint32_t xmax = scanbuffer[(y * 2) + 1] + 1;
+            //printf("XMAX: %u\n", xmax);
 
-            if (shade && is_cycles && xmax != 0)
+            if (is_cycles && xmax != 0)
             {
-                shd_red   += shd_DrDy;
-                shd_green += shd_DgDy;
-                shd_blue  += shd_DbDy;
-                shd_alpha += shd_DaDy;
+                if (shade)
+                {
+                    shd_red   += shd_DrDy;
+                    shd_green += shd_DgDy;
+                    shd_blue  += shd_DbDy;
+                    shd_alpha += shd_DaDy;
+                }
+
+                if (tex)
+                {
+                    tex_S += tex_DsDy;
+                    tex_T += tex_DtDy;
+                    tex_W += tex_DwDy;
+                }
             }
 
             do_x_pixel_scanbuffer(y, edges->lft, xmax, xmin, 
                                   &shd_red,  &shd_green, &shd_blue, &shd_alpha, 
                                   &shd_DrDx, &shd_DgDx,  &shd_DbDx, &shd_DaDx,
-                                  &shd_DrDe, &shd_DgDe,  &shd_DbDe, &shd_DaDe, shade);
+                                  &shd_DrDe, &shd_DgDe,  &shd_DbDe, &shd_DaDe,
+                                  &tex_S, &tex_T, &tex_W,
+                                  &tex_DsDx, &tex_DtDx, &tex_DwDx,
+                                  &tex_DsDe, &tex_DtDe, &tex_DwDe, 
+                                  shade, tex, edges->tile);
         }
     }
 }
@@ -398,19 +589,21 @@ void scan_convert_triangle(uint32_t* scanbuffer, edgecoeff_t* edges)
     float xstep2 = get_float_value_from_frmt((short)edges->DxLDy, edges->DxLDy_frac, 65535.0f);
     float xstep3 = get_float_value_from_frmt((short)edges->DxMDy, edges->DxMDy_frac, 65535.0f);
 
-    scan_convert_line(scanbuffer, xstep1, (float)edges->XH, get_ten_point_two(edges->YH), get_ten_point_two(edges->YL), (int)(1 - edges->lft));
-    scan_convert_line(scanbuffer, xstep2, (float)edges->XL, get_ten_point_two(edges->YM), get_ten_point_two(edges->YL), edges->lft);
-    scan_convert_line(scanbuffer, xstep3, (float)edges->XM, get_ten_point_two(edges->YH), get_ten_point_two(edges->YM), edges->lft);
+    //printf("XStep1: %f, XStep2: %f, XStep3: %f\n", xstep1, xstep2, xstep3);
+
+    scan_convert_line(scanbuffer, xstep1, get_float_value_from_frmt((short)edges->XH, edges->XH_frac, 65535.0f), get_eleven_point_two(edges->YH), get_eleven_point_two(edges->YL), (int)(1 - edges->lft));
+    scan_convert_line(scanbuffer, xstep2, get_float_value_from_frmt((short)edges->XL, edges->XL_frac, 65535.0f), get_eleven_point_two(edges->YM), get_eleven_point_two(edges->YL), edges->lft);
+    scan_convert_line(scanbuffer, xstep3, get_float_value_from_frmt((short)edges->XM, edges->XM_frac, 65535.0f), get_eleven_point_two(edges->YH), get_eleven_point_two(edges->YM), edges->lft);
 }
 
-void draw_triangle(edgecoeff_t* edges, shadecoeff_t* shade, texcoeff_t* texture, zbuffercoeff_t* zbuf)
+void draw_triangle(edgecoeff_t* edges, shadecoeff_t* shade, texcoeff_t* tex, zbuffercoeff_t* zbuf)
 {
     uint32_t tri_scanbuffer[SCANBUFFER_HEIGHT * 2];
     memset(tri_scanbuffer, 0, (SCANBUFFER_HEIGHT * 2) * sizeof(uint32_t));
 
     scan_convert_triangle(tri_scanbuffer, edges);
 
-    draw_scanbuffer(tri_scanbuffer, edges, shade);
+    draw_scanbuffer(tri_scanbuffer, edges, shade, tex);
 }
 
 void fill_rect(rect_t* rect)
@@ -477,7 +670,7 @@ void draw_tex_rect(texrect_t* tex_rect, bool flip)
             memset(&texel0, 0, sizeof(rgbacolor_t));
             memset(&texel1, 0, sizeof(rgbacolor_t));
 
-            if (tiles[index].format == FRMT_RGBA)
+            if (tiles[index].format == FRMT_RGBA && ((index < 7) ? tiles[index].format == tiles[index+1].format : true))
             {
                 uint32_t S0 = 0;
                 uint32_t T0 = 0;
@@ -520,27 +713,28 @@ void draw_tex_rect(texrect_t* tex_rect, bool flip)
                         convert_16_32(&texel1, bswap_16(*(uint16_t*)&RDP_TMEM[addr1 + tex_index1]));
                     }
                 }
-
-                cccolorin_t cc_colors;
-                cc_colors.combined     = NULL;
-                cc_colors.shade_color  = NULL;
-                cc_colors.texel0_color = &texel0;
-                cc_colors.texel1_color = &texel1;
-
-                blcolorin_t bl_colors;
-                bl_colors.shade_color = NULL;
-                rgbacolor_t mem_color = get_pixel(x, y);
-                bl_colors.mem_color   = &mem_color;
-                bl_colors.combined    = NULL;
-
-                uint32_t color = process_pixel(cc_colors, bl_colors);
-                set_pixel(x, y, color);
             }
             else
             {
                 puts("Texture formats other than RGBA are not supported currently.\n");
                 return;
             }
+
+            cccolorin_t cc_colors;
+            cc_colors.combined     = NULL;
+            cc_colors.shade_color  = NULL;
+            cc_colors.texel0_color = &texel0;
+            cc_colors.texel1_color = &texel1;
+
+            blcolorin_t bl_colors;
+            bl_colors.shade_color = NULL;
+            rgbacolor_t mem_color = get_pixel(x, y);
+            bl_colors.mem_color   = &mem_color;
+            bl_colors.combined    = NULL;
+
+            uint32_t color = process_pixel(cc_colors, bl_colors);
+            set_pixel(x, y, color);
+
             S += DsDx;
         }
         T += DtDy;

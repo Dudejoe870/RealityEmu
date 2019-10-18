@@ -42,7 +42,7 @@ __attribute__((__always_inline__)) static inline void CPU_interp_step(void)
         vi_cycle_count = 0;
     }
 
-    r4300.curr_inst_cycles = 1;
+    r4300.curr_inst_cycles = 4;
     op.interpret(inst, &r4300);
 
     vi_cycle_count   += r4300.curr_inst_cycles;

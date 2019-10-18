@@ -14,6 +14,13 @@ SDL_GLContext context;
 GLuint framebuffer_texture = 0;
 cartheader_t* header;
 
+bool should_update_frame;
+
+void on_vi(void)
+{
+    should_update_frame = true;
+}
+
 int window_init(int width, int height, char* title)
 {
     SDL_Init(SDL_INIT_EVERYTHING);
@@ -68,12 +75,14 @@ void* get_framebuffer_image(uint32_t* width, uint32_t* height, uint8_t* pixel_si
     uint32_t pixel_size = vi_status & 0b11;
     if (pixel_size == 0) return NULL;
 
+    uint8_t interlaced = ((vi_status & 0b1000000) >> 6) & 1;
+
     uint32_t vi_h_start = bswap_32(VI_H_START_REG_RW);
     uint32_t h_end_of_video = vi_h_start & 0x3FF;
     uint32_t h_start_of_video = (vi_h_start >> 16) & 0x3FF;
     uint32_t x_scale = bswap_32(VI_X_SCALE_REG_RW) & 0xFFF;
 
-    uint32_t framebuffer_width = (h_end_of_video - h_start_of_video) * (float)x_scale / (1 << 10);
+    uint32_t framebuffer_width = (uint32_t)((float)(h_end_of_video - h_start_of_video) * (float)x_scale / (1 << 10));
 
     *width = framebuffer_width;
 
@@ -82,7 +91,7 @@ void* get_framebuffer_image(uint32_t* width, uint32_t* height, uint8_t* pixel_si
     uint32_t v_start_of_video = (vi_v_start >> 16) & 0x3FF;
     uint32_t y_scale = bswap_32(VI_Y_SCALE_REG_RW) & 0xFFF;
 
-    uint32_t framebuffer_height = ((v_end_of_video - v_start_of_video) >> 1) * (float)y_scale / (1 << 10);
+    uint32_t framebuffer_height = ((uint32_t)((float)((v_end_of_video - v_start_of_video) >> 1) * (float)y_scale / (1 << 10)));
 
     *height = framebuffer_height;
 
@@ -94,26 +103,28 @@ void* get_framebuffer_image(uint32_t* width, uint32_t* height, uint8_t* pixel_si
 
     uint32_t pitch = framebuffer_width * bytes_per_pixel;
 
-    uint8_t interlaced = ((vi_status & 0b1000000) >> 6) & 1;
-
-    for (size_t y = 0; y < (bswap_32(VI_V_SYNC_REG_RW) & 0x3FF); ++y)
+    if (should_update_frame)
     {
-        if (y >= v_start_of_video && y < v_end_of_video)
+        for (size_t y = 0; y < (bswap_32(VI_V_SYNC_REG_RW) & 0x3FF); ++y)
         {
-            uint32_t line = (y - v_start_of_video) >> (~interlaced & 1);
-            uint32_t offset = pitch * line;
-
-            if (bytes_per_pixel == 4)
-                memcpy(frame_copy + offset, ((uint8_t*)framebuffer) + offset, pitch);
-            else
+            if (y >= v_start_of_video && y < v_end_of_video)
             {
-                for (size_t end = offset + pitch; offset < end; offset += 2)
+                uint32_t line = (y - v_start_of_video) >> (~interlaced & 1);
+                uint32_t offset = pitch * line;
+
+                if (bytes_per_pixel == 4)
+                    memcpy(frame_copy + offset, ((uint8_t*)framebuffer) + offset, pitch);
+                else
                 {
-                    frame_copy[offset]     = ((uint8_t*)framebuffer)[offset + 1];
-                    frame_copy[offset + 1] = ((uint8_t*)framebuffer)[offset];
+                    for (size_t end = offset + pitch, i = offset; i < end; i += 2)
+                    {
+                        frame_copy[i]     = ((uint8_t*)framebuffer)[i + 1];
+                        frame_copy[i + 1] = ((uint8_t*)framebuffer)[i];
+                    }
                 }
             }
         }
+        should_update_frame = false;
     }
 
     *pixel_size_out = pixel_size;

@@ -4,6 +4,7 @@
 
 void RSP_opcode_table_init(void)
 {
+    memset(RSP_opcode_table, 0, sizeof(RSP_opcode_table));
     RSP_opcode_table[0b000000].interpret = &SPECIAL;
     RSP_opcode_table[0b000001].interpret = &REGIMM;
     RSP_opcode_table[0b010000].interpret = &COP0;

@@ -146,10 +146,6 @@ rgbacolor_t get_bl_color(blcolorin_t colors, uint8_t cycle)
     blinput_t M = get_bl_m(cycle);
     blinput_t B = get_bl_b(cycle);
 
-    //printf("Blender = (%s * %s + %s * %s) / (%s + %s)\n", 
-    //        blinput_names[A], blinput_names[P], blinput_names[B], blinput_names[M], blinput_names[A], blinput_names[B]);
-    //printf("m1a: %u (%s), m1b: %u (%s), m2a: %u (%s), m2b: %u (%s)\n", othermodes.b_m1a_0, blinput_names[P], othermodes.b_m1b_0, blinput_names[A], othermodes.b_m2a_0, blinput_names[M], othermodes.b_m2b_0, blinput_names[B]);
-
     get_blinput_val(P, colors, &rgba_P, NULL);
     get_blinput_val(A, colors, &rgba_A, NULL);
     get_blinput_val(M, colors, &rgba_M, NULL);

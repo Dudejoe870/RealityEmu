@@ -4,6 +4,7 @@
 
 void CPU_opcode_table_init(void)
 {
+    memset(CPU_opcode_table, 0, sizeof(CPU_opcode_table));
     CPU_opcode_table[0b000000].interpret = &SPECIAL;
     CPU_opcode_table[0b000001].interpret = &REGIMM;
     CPU_opcode_table[0b010000].interpret = &COP0;

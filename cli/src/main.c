@@ -128,6 +128,8 @@ int main(int argc, char** argv)
         case REG_MPAL: config.vi_clock = 48628316; break;
     }
 
+    vi_event = on_vi;
+
     CPU_init(ROM, (size_t)len);
 
     window_init(WINDOW_WIDTH, WINDOW_HEIGHT, " ");

@@ -336,15 +336,20 @@ __attribute__((__always_inline__)) static inline float get_float_value_from_frmt
 
 __attribute__((__always_inline__)) static inline float get_ten_point_two(uint16_t value)
 {
-    return get_float_value_from_frmt(value >> 2, value & 0x3, 3.0f);
+    return get_float_value_from_frmt((value & 0xFFF) >> 2, value & 0x3, 3.0f);
+}
+
+__attribute__((__always_inline__)) static inline float get_eleven_point_two(uint16_t value)
+{
+    return get_float_value_from_frmt((value & 0x1FFF) >> 2, value & 0x3, 3.0f);
 }
 
 __attribute__((__always_inline__)) static inline float get_ten_point_five(uint16_t value)
 {
-    return get_float_value_from_frmt(value >> 5, value & 0x1F, 31.0f);
+    return get_float_value_from_frmt((value & 0x7FFF) >> 5, value & 0x1F, 31.0f);
 }
 
 __attribute__((__always_inline__)) static inline float get_five_point_ten(uint16_t value)
 {
-    return get_float_value_from_frmt(value >> 10, value & 0x3FF, 1024.0f);
+    return get_float_value_from_frmt((value & 0x7FFF) >> 10, value & 0x3FF, 1024.0f);
 }

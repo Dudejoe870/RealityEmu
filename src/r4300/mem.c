@@ -12,6 +12,12 @@ void SP_RD_LEN_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
 
     uint8_t* MEM = (bswap_32(SP_MEM_ADDR_REG_RW) & 0x1000) ? SP_IMEM_RW : SP_DMEM_RW;
 
+    if (config.debug_logging) 
+        printf("RSPDMA: Type: Read, DMA Length: %u, DMA Count: %u, Skip: %u, RSP Address: 0x%x, DRAM Address: 0x%x, RSP Mem Type: %s\n", 
+            len + 1, count + 1, skip, 
+            bswap_32(SP_MEM_ADDR_REG_RW) & 0xFFF, bswap_32(SP_DRAM_ADDR_REG_RW),
+            (bswap_32(SP_MEM_ADDR_REG_RW) & 0x1000) ? "IMEM" : "DMEM");
+
     uint32_t index = 0;
     uint32_t index_no_skip = 0;
     for (uint32_t j = 0; j <= count; ++j)
@@ -31,6 +37,12 @@ void SP_WR_LEN_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
     uint16_t skip  = (value & 0xFFF00000) >> 20;
 
     uint8_t* MEM = (bswap_32(SP_MEM_ADDR_REG_RW) & 0x1000) ? SP_IMEM_RW : SP_DMEM_RW;
+
+    if (config.debug_logging) 
+        printf("RSPDMA: Type: Write, DMA Length: %u, DMA Count: %u, Skip: %u, RSP Address: 0x%x, DRAM Address: 0x%x, RSP Mem Type: %s\n", 
+            len + 1, count + 1, skip, 
+            bswap_32(SP_MEM_ADDR_REG_RW) & 0xFFF, bswap_32(SP_DRAM_ADDR_REG_RW),
+            (bswap_32(SP_MEM_ADDR_REG_RW) & 0x1000) ? "IMEM" : "DMEM");
 
     uint32_t index = 0;
     uint32_t index_no_skip = 0;
@@ -170,13 +182,13 @@ void DPC_END_REG_WRITE_EVENT(uint64_t value, uint32_t addr)
 
 void PI_WR_LEN_WRITE_EVENT(uint64_t value, uint32_t addr)
 {
+    if (config.debug_logging) printf("PIDMA: Type: Write, DMA Length: 0x%x, Cart Address: 0x%x, DRAM Address: 0x%x\n", (uint32_t)value + 1, bswap_32(PI_CART_ADDR_REG_RW), bswap_32(PI_DRAM_ADDR_REG_RW));
+    
     memory_memcpy(bswap_32(PI_DRAM_ADDR_REG_RW), bswap_32(PI_CART_ADDR_REG_RW), (uint32_t)value + 1);
 
     PI_STATUS_REG_R &= bswap_32(~0b0001); // Clear DMA Busy
 
     invoke_mi_interrupt(MI_INTR_PI);
-
-    if (config.debug_logging) printf("PIDMA: Type: Write, DMA Length: 0x%x, Cart Address: 0x%x, DRAM Address: 0x%x\n", (uint32_t)value + 1, bswap_32(PI_CART_ADDR_REG_RW), bswap_32(PI_DRAM_ADDR_REG_RW));
 }
 
 void PI_STATUS_REG_WRITE_EVENT(uint64_t value, uint32_t addr)

@@ -315,8 +315,6 @@ rgbacolor_t get_cc_color(cccolorin_t colors, uint8_t cycle)
     ccinput_t r_B = get_cc_b(cycle, false);
     ccinput_t r_C = get_cc_c(cycle, false);
     ccinput_t r_D = get_cc_d(cycle, false);
-    
-    //printf("Color = (%s - %s) * %s + %s\n", ccinput_names[r_A], ccinput_names[r_B], ccinput_names[r_C], ccinput_names[r_D]);
 
     get_ccinput_val_r(r_A, colors, &rgba_A);
     get_ccinput_val_r(r_B, colors, &rgba_B);
@@ -327,8 +325,6 @@ rgbacolor_t get_cc_color(cccolorin_t colors, uint8_t cycle)
     ccinput_t a_B = get_cc_b(cycle, true);
     ccinput_t a_C = get_cc_c(cycle, true);
     ccinput_t a_D = get_cc_d(cycle, true);
-
-    //printf("Alpha = (%s - %s) * %s + %s\n", ccinput_names[a_A], ccinput_names[a_B], ccinput_names[a_C], ccinput_names[a_D]);
 
     get_ccinput_val_a(a_A, colors, &rgba_A);
     get_ccinput_val_a(a_B, colors, &rgba_B);
